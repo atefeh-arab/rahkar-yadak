@@ -1,0 +1,1 @@
+<%- include('partials/head',{title,categories:[]}) %><div class="static"><div class="crumb"><a href="/">خانه</a> / <%= title %></div><h1><%= title %></h1><p><%= content %></p><% if(title==='تماس با ما'){ %><p>تلفن: <%= storePhone %></p><p>نشانی: <%= storeAddress %></p><% } %></div><%- include('partials/foot') %>
