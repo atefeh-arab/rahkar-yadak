@@ -79,7 +79,7 @@
   <div class="brands-row">
     <% brands.forEach(function (b) { %>
       <a href="/products?brand=<%= b.id %>" title="<%= b.name %>">
-        <img src="/images/brands/<%= b.slug %>.svg" alt="<%= b.name %>">
+        <img src="<%= brandLogo(b) %>" alt="<%= b.name %>" loading="lazy">
       </a>
     <% }) %>
   </div>

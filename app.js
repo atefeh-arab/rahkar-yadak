@@ -86,6 +86,21 @@ app.use((req, res, next) => {
   res.locals.dateTimeFa = fmt.dateTimeFa;
   res.locals.finalPrice = fmt.finalPrice;
   res.locals.discountPercent = fmt.discountPercent;
+  // لوگوی برندهای خودرو: فایل‌های لوگو با نام لاتین ساخته شده‌اند ولی slug برند فارسی است،
+  // پس اول نگاشت نام→فایل، بعد فایل هم‌نام slug و در نهایت تصویر پیش‌فرض بررسی می‌شود
+  // تا هیچ تصویر شکسته‌ای در سایت نمایش داده نشود. (Brand logo with a safe fallback.)
+  const BRAND_LOGO = {
+    'پژو': 'peugeot', 'سمند': 'samand', 'پراید': 'pride', 'تویوتا': 'toyota',
+    'هیوندای': 'hyundai', 'کیا': 'kia', 'رنو': 'renault', 'تیبا': 'tiba'
+  };
+  const brandFile = (name) => path.join(__dirname, 'public', 'images', 'brands', name + '.svg');
+  res.locals.brandLogo = function (b) {
+    if (!b) return '/images/part.svg';
+    const mapped = BRAND_LOGO[b.name];
+    if (mapped && fs.existsSync(brandFile(mapped))) return '/images/brands/' + mapped + '.svg';
+    if (b.slug && fs.existsSync(brandFile(b.slug))) return '/images/brands/' + b.slug + '.svg';
+    return '/images/part.svg';
+  };
   res.locals.navCategories = all('SELECT c.id, c.name, c.slug, COUNT(p.id) AS n FROM categories c LEFT JOIN products p ON p.category_id = c.id AND p.active = 1 GROUP BY c.id ORDER BY c.name');
   res.locals.cart = readCart(req);
   res.locals.cartCount = res.locals.cart.count;
