@@ -1,1 +1,0 @@
-برای فعال‌شدن فونت Vazirmatn به‌صورت محلی، فایل Vazirmatn-Variable.woff2 را از توزیع رسمی فونت در این مسیر قرار دهید. در نبود آن، فونت نصب‌شده سیستم/Tahoma استفاده می‌شود. https://github.com/rastikerdar/vazirmatn

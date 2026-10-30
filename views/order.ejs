@@ -1,1 +1,48 @@
-<%- include('partials/head',{title,categories:[]}) %><div class="empty"><h1>سفارش شما ثبت شد</h1><p>کد پیگیری</p><h2 class="red"><%= order.tracking_code %></h2><p>وضعیت: <%= ({pending:'در انتظار تأیید',processing:'در حال پردازش',shipped:'ارسال شده',delivered:'تحویل شده',cancelled:'لغو شده'})[order.status] %></p><p>پرداخت: <%= order.payment_method==='demo'?(order.payment_status==='paid-demo'?'پرداخت آزمایشی ثبت شد':'در انتظار پرداخت آزمایشی'):'پرداخت در محل' %></p><div class="panel"><% items.forEach(i=>{ %><p><%= i.name %> × <%= money(i.quantity) %> — <%= money(i.price*i.quantity) %> تومان</p><% }) %><hr><b>مبلغ کل: <%= money(order.total) %> تومان</b><p><%= order.recipient %> · <%= order.phone %></p><p><%= order.province %>، <%= order.city %>، <%= order.address %></p></div><a class="btn" href="/profile">حساب کاربری</a></div><%- include('partials/foot') %>
+<%- include('partials/head') %>
+
+<div class="panel" style="max-width:860px;margin:0 auto">
+  <div class="alert alert-ok">✓ سفارش شما با موفقیت ثبت شد.</div>
+
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border-bottom:1px dashed var(--line);padding-bottom:12px">
+    <div>
+      <div class="muted" style="font-size:13px">کد رهگیری سفارش</div>
+      <div style="font-size:22px;font-weight:900" dir="ltr"><%= order.code %></div>
+    </div>
+    <div class="status st-<%= order.status %>"><%= order.status === 'pending' ? 'در انتظار پرداخت' : order.status === 'processing' ? 'در حال پردازش' : order.status === 'shipped' ? 'ارسال شده' : order.status === 'delivered' ? 'تحویل شده' : 'لغو شده' %></div>
+  </div>
+
+  <p class="muted" style="font-size:13.5px">این کد را نگه دارید؛ از صفحه <a class="red" href="/track">پیگیری سفارش</a> می‌توانید وضعیت سفارش را ببینید.</p>
+
+  <table class="spec" style="margin-top:10px">
+    <tr><th>نام گیرنده</th><td><%= order.receiver %></td></tr>
+    <tr><th>موبایل</th><td dir="ltr"><%= order.phone %></td></tr>
+    <tr><th>نشانی</th><td><%= [order.province, order.city, order.address].filter(Boolean).join(' — ') %></td></tr>
+    <tr><th>کد پستی</th><td dir="ltr"><%= order.postal || '—' %></td></tr>
+    <tr><th>روش ارسال</th><td><%= order.shipping_method %></td></tr>
+    <tr><th>روش پرداخت</th><td><%= order.payment_method === 'online' ? 'پرداخت اینترنتی (نمایشی)' : 'پرداخت در محل' %></td></tr>
+    <tr><th>تاریخ ثبت</th><td><%= dateTimeFa(order.created_at) %></td></tr>
+  </table>
+
+  <h3 style="margin-top:18px">اقلام سفارش</h3>
+  <table class="spec">
+    <thead><tr><th>کالا</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr></thead>
+    <tbody>
+      <% items.forEach(function (it) { %>
+        <tr><td><%= it.name %></td><td><%= fa(it.qty) %></td><td><%= money(it.price) %></td><td><%= money(it.total) %></td></tr>
+      <% }) %>
+    </tbody>
+    <tfoot>
+      <tr><th colspan="3">جمع کالاها</th><td><%= money(order.subtotal) %> تومان</td></tr>
+      <tr><th colspan="3">هزینه ارسال</th><td><%= order.shipping_cost === 0 ? 'رایگان' : money(order.shipping_cost) + ' تومان' %></td></tr>
+      <tr><th colspan="3">مبلغ قابل پرداخت</th><td class="red"><strong><%= money(order.total) %> تومان</strong></td></tr>
+    </tfoot>
+  </table>
+
+  <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+    <a class="btn" href="/products">ادامه خرید</a>
+    <a class="btn btn-ghost" href="/orders">سفارش‌های من</a>
+    <a class="btn btn-ghost" href="/">بازگشت به صفحه اصلی</a>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

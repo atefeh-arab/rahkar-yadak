@@ -1,0 +1,47 @@
+<%- include('partials/head') %>
+
+<h1>سفارش‌های من</h1>
+
+<div class="acct">
+  <nav class="acct-nav">
+    <a href="/account">اطلاعات پروفایل</a>
+    <a href="/account?tab=addresses">نشانی‌های من</a>
+    <a href="/orders" class="active">سفارش‌های من</a>
+  </nav>
+
+  <div>
+    <% if (!orders.length) { %>
+      <div class="empty">
+        <h3>هنوز سفارشی ثبت نکرده‌اید</h3>
+        <p class="muted">اولین خرید خود را انجام دهید.</p>
+        <a class="btn" href="/products">شروع خرید</a>
+      </div>
+    <% } else { %>
+      <% orders.forEach(function (o) { %>
+        <div class="order-card">
+          <div class="order-head">
+            <div>
+              <strong dir="ltr"><%= o.code %></strong>
+              <span class="muted" style="font-size:12.5px"> — <%= dateTimeFa(o.created_at) %></span>
+            </div>
+            <div class="status st-<%= o.status %>">
+              <%= o.status === 'pending' ? 'در انتظار پرداخت' : o.status === 'processing' ? 'در حال پردازش' : o.status === 'shipped' ? 'ارسال شده' : o.status === 'delivered' ? 'تحویل شده' : 'لغو شده' %>
+            </div>
+          </div>
+          <div class="muted" style="font-size:13px;margin-bottom:6px">
+            <%= o.items.length %> قلم کالا — مبلغ: <strong class="red"><%= money(o.total) %> تومان</strong>
+          </div>
+          <ul style="font-size:13px;color:#555;margin-bottom:8px">
+            <% o.items.forEach(function (it) { %><li>• <%= it.name %> × <%= fa(it.qty) %></li><% }) %>
+          </ul>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn btn-sm" href="/order/<%= o.code %>">جزئیات سفارش</a>
+            <a class="btn btn-sm btn-ghost" href="/track?code=<%= o.code %>">پیگیری</a>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> | پنل مدیریت یدک‌یار</title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-top">
+  <span class="brand"><i></i> یدک‌یار — پنل مدیریت</span>
+  <div class="links">
+    <a href="/" target="_blank" rel="noopener">مشاهده فروشگاه ↗</a>
+    <form action="/admin/logout" method="post" style="display:inline">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" style="background:none;border:0;color:#ddd;cursor:pointer;font-weight:700;font-size:13px;padding:7px 11px">خروج</button>
+    </form>
+  </div>
+</div>
+
+<div class="admin-wrap">
+  <nav class="admin-side">
+    <a href="/admin" class="<%= path === '/' || path === '' ? 'active' : '' %>">داشبورد</a>
+    <a href="/admin/products" class="<%= path.indexOf('/products') === 0 ? 'active' : '' %>">کالاها <span class="n"><%= fa(counts.products) %></span></a>
+    <a href="/admin/categories" class="<%= path.indexOf('/categories') === 0 ? 'active' : '' %>">دسته‌بندی‌ها <span class="n"><%= fa(counts.categories) %></span></a>
+    <a href="/admin/brands" class="<%= path.indexOf('/brands') === 0 ? 'active' : '' %>">خودروها <span class="n"><%= fa(counts.brands) %></span></a>
+    <a href="/admin/orders" class="<%= path.indexOf('/orders') === 0 ? 'active' : '' %>">سفارش‌ها <span class="n"><%= fa(counts.orders) %></span></a>
+    <a href="/admin/users" class="<%= path.indexOf('/users') === 0 ? 'active' : '' %>">مشتریان <span class="n"><%= fa(counts.users) %></span></a>
+    <a href="/admin/settings" class="<%= path.indexOf('/settings') === 0 ? 'active' : '' %>">تنظیمات</a>
+  </nav>
+
+  <main class="admin-main">

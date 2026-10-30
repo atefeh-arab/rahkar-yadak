@@ -1,1 +1,64 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><h1>سفارش <%= order.tracking_code %></h1><div class="twocol"><div class="panel"><h2>اقلام سفارش</h2><% items.forEach(i=>{ %><p><%= i.name %> × <%= money(i.quantity) %> — <%= money(i.price*i.quantity) %> تومان</p><% }) %><hr><b>مبلغ کل: <%= money(order.total) %></b></div><div class="panel"><h2>ارسال به</h2><p><%= order.recipient %> · <%= order.phone %></p><p><%= order.province %>، <%= order.city %>، <%= order.address %></p><form method="post" action="/admin/orders/<%= order.id %>/status"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label>وضعیت<select name="status"><% [['pending','در انتظار'],['processing','در حال پردازش'],['shipped','ارسال شده'],['delivered','تحویل شده'],['cancelled','لغو شده']].forEach(s=>{ %><option value="<%= s[0] %>" <%= order.status===s[0]?'selected':'' %>><%= s[1] %></option><% }) %></select></label><button class="btn">ذخیره وضعیت</button></form></div></div></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title">
+  <h1>سفارش <span dir="ltr"><%= order.code %></span></h1>
+  <a class="btn btn-ghost" href="/admin/orders">بازگشت</a>
+</div>
+
+<div class="box">
+  <div class="form-grid">
+    <div>
+      <h3>اطلاعات سفارش</h3>
+      <table class="spec">
+        <tr><th>گیرنده</th><td><%= order.receiver %></td></tr>
+        <tr><th>موبایل</th><td dir="ltr"><%= order.phone %></td></tr>
+        <tr><th>نشانی</th><td><%= [order.province, order.city, order.address].filter(Boolean).join(' — ') %></td></tr>
+        <tr><th>کد پستی</th><td dir="ltr"><%= order.postal || '—' %></td></tr>
+        <tr><th>تاریخ ثبت (شمسی)</th><td><%= dateTimeFa(order.created_at) %></td></tr>
+        <tr><th>روش ارسال</th><td><%= order.shipping_method %></td></tr>
+        <tr><th>روش پرداخت</th><td><%= order.payment_method === 'online' ? 'اینترنتی (نمایشی)' : 'پرداخت در محل' %></td></tr>
+        <% if (order.note) { %><tr><th>یادداشت مشتری</th><td><%= order.note %></td></tr><% } %>
+      </table>
+    </div>
+    <div>
+      <h3>وضعیت سفارش</h3>
+      <form action="/admin/orders/<%= order.id %>/status" method="post" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <select class="status-select" name="status">
+          <% Object.keys(statuses).forEach(function (s) { %>
+            <option value="<%= s %>" <%= order.status === s ? 'selected' : '' %>><%= statuses[s] %></option>
+          <% }) %>
+        </select>
+        <button class="btn btn-sm" type="submit">ثبت وضعیت</button>
+      </form>
+      <p class="muted" style="font-size:12.5px">با تغییر وضعیت، مشتری آن را در بخش «سفارش‌های من» و صفحه پیگیری می‌بیند.</p>
+
+      <h3 style="margin-top:18px">مبالغ</h3>
+      <table class="spec">
+        <tr><th>جمع کالاها</th><td><%= money(order.subtotal) %> تومان</td></tr>
+        <tr><th>هزینه ارسال</th><td><%= order.shipping_cost === 0 ? 'رایگان' : money(order.shipping_cost) + ' تومان' %></td></tr>
+        <tr><th>مبلغ کل</th><td class="red"><strong><%= money(order.total) %> تومان</strong></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="box">
+  <h3>اقلام سفارش</h3>
+  <table class="table">
+    <thead><tr><th>کالا</th><th>قیمت واحد</th><th>تخفیف</th><th>تعداد</th><th>جمع</th></tr></thead>
+    <tbody>
+      <% items.forEach(function (it) { %>
+        <tr>
+          <td><%= it.name %></td>
+          <td><%= money(it.price) %> تومان</td>
+          <td><%= it.discount ? money(it.discount) + ' تومان' : '—' %></td>
+          <td><%= fa(it.qty) %></td>
+          <td><strong><%= money(it.total) %> تومان</strong></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('_bottom') %>

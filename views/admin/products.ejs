@@ -1,1 +1,64 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><div class="adminhead"><h1>محصولات</h1><a class="btn" href="/admin/products/new">+ افزودن محصول</a></div><div class="panel tablewrap"><table><tr><th>نام</th><th>دسته</th><th>کد OEM</th><th>قیمت</th><th>تخفیف</th><th>موجودی</th><th>عملیات</th></tr><% products.forEach(p=>{ %><tr><td><%= p.name %></td><td><%= p.category_name||'—' %></td><td><%= p.part_number %></td><td><%= money(p.price) %></td><td><%= money(p.discount) %>٪</td><td><%= money(p.stock) %></td><td><a href="/admin/products/<%= p.id %>/edit">ویرایش</a> <form class="inline" method="post" action="/admin/products/<%= p.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="textbtn" onclick="return confirm('حذف شود؟')">حذف</button></form></td></tr><% }) %></table></div></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title">
+  <h1>مدیریت کالاها <span class="muted" style="font-size:13px">(<%= fa(total) %> کالا)</span></h1>
+  <a class="btn" href="/admin/products/new">+ افزودن کالا</a>
+</div>
+
+<div class="box">
+  <form action="/admin/products" method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input class="input" style="max-width:320px" type="search" name="q" value="<%= q %>" placeholder="جست‌وجو در نام، کد فنی یا برند...">
+    <button class="btn btn-ghost" type="submit">جست‌وجو</button>
+    <% if (q) { %><a class="btn btn-ghost" href="/admin/products">پاک‌کردن</a><% } %>
+  </form>
+</div>
+
+<div class="box">
+  <% if (!rows.length) { %>
+    <p class="muted">کالایی پیدا نشد.</p>
+  <% } else { %>
+  <table class="table">
+    <thead>
+      <tr><th>تصویر</th><th>نام کالا</th><th>دسته</th><th>قیمت</th><th>تخفیف</th><th>موجودی</th><th>وضعیت</th><th></th></tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function (p) { %>
+        <tr>
+          <td><img class="thumb" src="<%= p.image || '/images/part.svg' %>" alt=""></td>
+          <td>
+            <strong><%= p.name %></strong><br>
+            <small dir="ltr"><%= p.part_number || '—' %></small>
+          </td>
+          <td><%= p.category_name || '—' %></td>
+          <td><%= money(p.price - p.discount) %> تومان</td>
+          <td><%= p.discount > 0 ? money(p.discount) + ' تومان' : '—' %></td>
+          <td class="<%= p.stock <= 5 ? 'red' : '' %>"><strong><%= fa(p.stock) %></strong></td>
+          <td><span class="status <%= p.active ? 'st-delivered' : 'st-cancelled' %>"><%= p.active ? 'نمایش' : 'مخفی' %></span></td>
+          <td>
+            <div class="acts">
+              <a class="btn btn-sm btn-ghost" href="/admin/products/<%= p.id %>/edit">ویرایش</a>
+              <a class="btn btn-sm btn-outline" href="/product/<%= p.slug %>" target="_blank" rel="noopener">مشاهده</a>
+              <form action="/admin/products/<%= p.id %>/delete" method="post" data-confirm="«<%= p.name %>» حذف شود؟">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-danger" type="submit">حذف</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <% if (pages > 1) { %>
+  <div class="pagination">
+    <% for (var i = 1; i <= pages; i++) { %>
+      <% if (i === page) { %><span class="current"><%= fa(i) %></span><% } else { %>
+        <a href="/admin/products?page=<%= i %><%= q ? '&q=' + encodeURIComponent(q) : '' %>"><%= fa(i) %></a>
+      <% } %>
+    <% } %>
+  </div>
+  <% } %>
+  <% } %>
+</div>
+
+<%- include('_bottom') %>

@@ -1,1 +1,50 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><h1>سفارش‌ها</h1><div class="panel tablewrap"><table><tr><th>کد</th><th>گیرنده</th><th>تلفن</th><th>مبلغ</th><th>پرداخت</th><th>وضعیت</th><th>تاریخ شمسی</th><th></th></tr><% orders.forEach(o=>{ %><tr><td><%= o.tracking_code %></td><td><%= o.recipient %></td><td><%= o.phone %></td><td><%= money(o.total) %></td><td><%= o.payment_method %></td><td><%= o.status %></td><td><%= faDate(o.created_at) %></td><td><a href="/admin/orders/<%= o.id %>">جزئیات</a></td></tr><% }) %></table></div></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title">
+  <h1>سفارش‌ها <span class="muted" style="font-size:13px">(<%= fa(total) %> سفارش)</span></h1>
+</div>
+
+<div class="box">
+  <div class="chips" style="margin:0">
+    <a class="chip" href="/admin/orders" style="<%= !status ? 'background:var(--red);color:#fff' : '' %>">همه</a>
+    <% Object.keys(statuses).forEach(function (s) { %>
+      <a class="chip" href="/admin/orders?status=<%= s %>" style="<%= status === s ? 'background:var(--red);color:#fff' : '' %>"><%= statuses[s] %></a>
+    <% }) %>
+  </div>
+</div>
+
+<div class="box">
+  <% if (!rows.length) { %>
+    <p class="muted">سفارشی با این وضعیت وجود ندارد.</p>
+  <% } else { %>
+  <table class="table">
+    <thead><tr><th>کد رهگیری</th><th>گیرنده</th><th>موبایل</th><th>مبلغ</th><th>پرداخت</th><th>تاریخ (شمسی)</th><th>وضعیت</th><th></th></tr></thead>
+    <tbody>
+      <% rows.forEach(function (o) { %>
+        <tr>
+          <td dir="ltr"><strong><%= o.code %></strong></td>
+          <td><%= o.receiver %><br><small><%= o.city || '' %></small></td>
+          <td dir="ltr"><%= o.phone %></td>
+          <td><%= money(o.total) %> تومان</td>
+          <td><%= o.payment_method === 'online' ? 'اینترنتی' : 'در محل' %></td>
+          <td><%= dateTimeFa(o.created_at) %></td>
+          <td><span class="status st-<%= o.status %>"><%= statuses[o.status] %></span></td>
+          <td><div class="acts"><a class="btn btn-sm btn-ghost" href="/admin/orders/<%= o.id %>">جزئیات</a></div></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <% if (pages > 1) { %>
+  <div class="pagination">
+    <% for (var i = 1; i <= pages; i++) { %>
+      <% if (i === page) { %><span class="current"><%= fa(i) %></span><% } else { %>
+        <a href="/admin/orders?page=<%= i %><%= status ? '&status=' + status : '' %>"><%= fa(i) %></a>
+      <% } %>
+    <% } %>
+  </div>
+  <% } %>
+  <% } %>
+</div>
+
+<%- include('_bottom') %>

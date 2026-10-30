@@ -1,1 +1,131 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><div class="adminhead"><h1><%= isNew?'افزودن محصول':'ویرایش محصول' %></h1><a href="/admin/products">بازگشت</a></div><form class="panel" method="post" enctype="multipart/form-data" action="<%= isNew?'/admin/products':'/admin/products/'+p.id %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><div class="formgrid"><label class="span2">نام محصول *<input required name="name" value="<%= p.name||'' %>"></label><label>دسته‌بندی<select name="category_id"><option value="">بدون دسته</option><% categories.forEach(c=>{ %><option value="<%= c.id %>" <%= p.category_id===c.id?'selected':'' %>><%= c.name %></option><% }) %></select></label><label>برند قطعه<input name="brand" value="<%= p.brand||'' %>"></label><label>کد OEM<input name="part_number" value="<%= p.part_number||'' %>"></label><label>قیمت تومان *<input type="number" min="0" required name="price" value="<%= p.price??'' %>"></label><label>تخفیف درصدی<input type="number" min="0" max="90" name="discount" value="<%= p.discount||0 %>"></label><label>موجودی<input type="number" min="0" name="stock" value="<%= p.stock||0 %>"></label><label>برند خودرو<input name="car_brand" value="<%= p.car_brand||'' %>"></label><label>مدل خودرو<input name="car_model" value="<%= p.car_model||'' %>"></label><label>سال سازگاری<input name="year_range" value="<%= p.year_range||'' %>"></label><label>کشور سازنده<input name="origin" value="ایران"></label><label>گارانتی<input name="warranty" value="اصالت کالا"></label><label class="span2">خودروهای سازگار<input name="compatible" value="<%= p.compatible||'' %>"></label><label class="span2">توضیحات<textarea name="description" rows="4"><%= p.description||'' %></textarea></label><label class="span2">تصاویر (JPG/PNG/WebP/GIF، حداکثر ۲MB، تا ۵ فایل)<input type="file" name="images" accept="image/jpeg,image/png,image/webp,image/gif" multiple></label><% if(p.image){ %><img class="currentimg" src="<%= p.image %>" alt=""><% } %><label class="check span2"><input type="checkbox" name="featured" value="1" <%= p.featured?'checked':'' %>> محصول ویژه</label></div><button class="btn">ذخیره محصول</button></form></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title">
+  <h1><%= title %></h1>
+  <a class="btn btn-ghost" href="/admin/products">بازگشت به فهرست</a>
+</div>
+
+<% if (error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+<form action="<%= product && product.id ? '/admin/products/' + product.id : '/admin/products' %>" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <% if (product && product.slug) { %><input type="hidden" name="slug" value="<%= product.slug %>"><% } %>
+
+  <div class="box">
+    <h3>اطلاعات اصلی کالا</h3>
+    <div class="form-grid">
+      <div class="field full"><label>نام کالا *</label>
+        <input type="text" name="name" required minlength="3" value="<%= product ? product.name : '' %>"></div>
+
+      <div class="field"><label>دسته‌بندی</label>
+        <select name="category_id">
+          <option value="">— بدون دسته —</option>
+          <% categories.forEach(function (c) { %>
+            <option value="<%= c.id %>" <%= product && String(product.category_id) === String(c.id) ? 'selected' : '' %>><%= c.name %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="field"><label>برند قطعه (مثلاً بوش، یانگ‌سان، ژاپن‌کار)</label>
+        <input type="text" name="part_brand" list="part-brands" value="<%= product ? product.part_brand : '' %>">
+        <datalist id="part-brands"><option value="بوش"><option value="منتور"><option value="ایسیو"><option value="والئو"><option value="ایراکی"><option value="یانگ‌سان"></datalist>
+      </div>
+
+      <div class="field"><label>کد فنی (OEM)</label>
+        <input type="text" name="part_number" dir="ltr" value="<%= product ? product.part_number : '' %>" placeholder="5J0-1234"></div>
+
+      <div class="field"><label>قیمت (تومان) *</label>
+        <input type="number" name="price" required min="0" step="1000" value="<%= product ? product.price : '' %>"></div>
+
+      <div class="field"><label>مبلغ تخفیف (تومان)</label>
+        <input type="number" name="discount" min="0" step="1000" value="<%= product && product.discount ? product.discount : 0 %>"></div>
+
+      <div class="field"><label>موجودی انبار</label>
+        <input type="number" name="stock" min="0" value="<%= product ? product.stock : 10 %>"></div>
+
+      <div class="field"><label>&nbsp;</label>
+        <label class="check"><input type="checkbox" name="active" value="1" <%= !product || product.active ? 'checked' : '' %>> نمایش در فروشگاه</label>
+      </div>
+
+      <div class="field full"><label>توضیحات کالا</label>
+        <textarea name="description"><%= product ? product.description : '' %></textarea></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>تصاویر کالا</h3>
+    <% if (images && images.length) { %>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <% images.forEach(function (img) { %>
+          <div style="text-align:center">
+            <img src="<%= img.path %>" alt="" style="width:84px;height:84px;object-fit:contain;border:1px solid var(--line);border-radius:10px;padding:4px;background:#fafafa">
+            <form action="/admin/products/<%= product.id %>/images/<%= img.id %>/delete" method="post" data-confirm="این تصویر حذف شود؟">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm btn-danger" type="submit" style="margin-top:4px">حذف</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+    <div class="dropzone">
+      حداکثر ۵ تصویر — هر تصویر تا ۲ مگابایت (PNG، JPG، WebP یا SVG)
+      <input type="file" name="images" accept="image/*" multiple>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin-top:8px">اگر تصویری آپلود نکنید، تصویر پیش‌فرض قرمز و سفید برای کالا ساخته می‌شود.</p>
+  </div>
+
+  <div class="box">
+    <h3>مشخصات فنی</h3>
+    <div id="spec-rows">
+      <% specs.forEach(function (s) { %>
+        <div class="form-grid row-holder" style="margin-bottom:8px">
+          <div class="field"><input name="spec_k[]" placeholder="عنوان مشخصه" value="<%= s[0] %>"></div>
+          <div class="field"><input name="spec_v[]" placeholder="مقدار" value="<%= s[1] %>"></div>
+        </div>
+      <% }) %>
+      <div class="form-grid row-holder" style="margin-bottom:8px">
+        <div class="field"><input name="spec_k[]" placeholder="عنوان مشخصه"></div>
+        <div class="field"><input name="spec_v[]" placeholder="مقدار"></div>
+      </div>
+    </div>
+    <button class="btn btn-sm btn-ghost" type="button" id="add-spec">+ افزودن مشخصه</button>
+  </div>
+
+  <div class="box">
+    <h3>خودروهای سازگار</h3>
+    <div id="vehicle-rows">
+      <% var rowCount = Math.max(vehicles.length, 1); %>
+      <% for (var i = 0; i < rowCount; i++) { %>
+        <% var v = vehicles[i] || {}; %>
+        <div class="form-grid row-holder vehicle-row" style="margin-bottom:8px">
+          <div class="field"><label>برند خودرو</label>
+            <select name="v_brand[]">
+              <option value="">— انتخاب —</option>
+              <% brands.forEach(function (b) { %>
+                <option value="<%= b.id %>" <%= String(v.brand_id) === String(b.id) ? 'selected' : '' %>><%= b.name %></option>
+              <% }) %>
+            </select></div>
+          <div class="field"><label>مدل خودرو</label>
+            <select name="v_model[]">
+              <option value="">— همه مدل‌ها —</option>
+              <% models.forEach(function (m) { %>
+                <option value="<%= m.id %>" <%= String(v.model_id) === String(m.id) ? 'selected' : '' %>><%= m.brand_name + ' ' + m.name %></option>
+              <% }) %>
+            </select></div>
+          <div class="field"><label>از سال (شمسی)</label>
+            <input type="number" name="v_from[]" min="1300" max="1450" value="<%= v.year_from || '' %>" placeholder="1390"></div>
+          <div class="field"><label>تا سال (شمسی)</label>
+            <input type="number" name="v_to[]" min="1300" max="1450" value="<%= v.year_to || '' %>" placeholder="1404"></div>
+        </div>
+      <% } %>
+    </div>
+    <button class="btn btn-sm btn-ghost" type="button" id="add-vehicle">+ افزودن خودرو</button>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+    <button class="btn" type="submit"><%= product && product.id ? 'ذخیره تغییرات' : 'افزودن کالا' %></button>
+    <a class="btn btn-ghost" href="/admin/products">انصراف</a>
+  </div>
+</form>
+
+<%- include('_bottom') %>

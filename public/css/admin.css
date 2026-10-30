@@ -1,0 +1,75 @@
+/* ============================================================
+   پنل مدیریت یدک‌یار — استایل مدیریت
+   ============================================================ */
+.admin-body { background: #f2f3f5; min-height: 100vh; }
+
+.admin-top {
+  background: #1c1c1c; color: #fff; display: flex; align-items: center;
+  gap: 14px; padding: 0 16px; min-height: 56px; position: sticky; top: 0; z-index: 50;
+}
+.admin-top .brand { font-weight: 900; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.admin-top .brand i { width: 10px; height: 10px; background: var(--red); border-radius: 3px; display: inline-block; }
+.admin-top .links { display: flex; gap: 4px; margin-inline-start: auto; align-items: center; }
+.admin-top .links a {
+  color: #ddd; padding: 7px 11px; border-radius: 8px; font-size: 13px; font-weight: 700;
+}
+.admin-top .links a:hover, .admin-top .links a.active { background: var(--red); color: #fff; }
+
+.admin-wrap { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 16px; max-width: 1320px; margin: 0 auto; }
+
+.admin-side { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.admin-side a {
+  display: flex; justify-content: space-between; gap: 8px; padding: 12px 14px;
+  border-bottom: 1px solid #f2f2f2; font-weight: 700; font-size: 13.5px;
+}
+.admin-side a:last-child { border-bottom: 0; }
+.admin-side a:hover, .admin-side a.active { background: var(--red-soft); color: var(--red-dark); }
+.admin-side .n { background: var(--bg); border-radius: 999px; font-size: 11px; padding: 0 7px; color: var(--muted); }
+
+.admin-main { min-width: 0; }
+.admin-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.admin-title h1 { font-size: 19px; margin: 0; }
+
+.cards { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); margin-bottom: 16px; }
+.stat { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.stat .k { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.stat .v { font-size: 22px; font-weight: 900; margin-top: 4px; }
+.stat .v.red-c { color: var(--red); }
+.stat .v.green-c { color: var(--green); }
+
+.box { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; overflow-x: auto; }
+.box h3 { font-size: 15px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+.table th, .table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; text-align: right; vertical-align: middle; }
+.table th { background: #fafafa; font-size: 12.5px; color: #555; white-space: nowrap; }
+.table tr:last-child td { border-bottom: 0; }
+.table tr:hover td { background: #fcfcfc; }
+.table img.thumb { width: 42px; height: 42px; object-fit: contain; background: #fafafa; border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+.table .acts { display: flex; gap: 6px; white-space: nowrap; }
+
+.form-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 780px) { .form-grid { grid-template-columns: repeat(2, 1fr); } .form-grid .full { grid-column: 1 / -1; } }
+
+.dropzone {
+  border: 2px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center;
+  background: #fafafa; color: var(--muted); font-size: 13px;
+}
+.dropzone input[type=file] { display: block; margin: 8px auto 0; }
+
+.status-select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 13px; }
+
+.pagination { display: flex; gap: 6px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.pagination a, .pagination span {
+  min-width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; font-weight: 700; padding: 0 8px;
+}
+.pagination .current { background: var(--red); border-color: var(--red); color: #fff; }
+
+.login-wrap { max-width: 400px; margin: 60px auto; }
+.login-wrap .box { padding: 22px; }
+
+@media (min-width: 1000px) {
+  .admin-wrap { grid-template-columns: 232px 1fr; }
+  .cards { grid-template-columns: repeat(4, 1fr); }
+}

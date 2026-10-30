@@ -1,1 +1,46 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><h1>تنظیمات فروشگاه</h1><form class="panel" method="post" action="/admin/settings"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label>نام فروشگاه<input required name="store_name" value="<%= settings.store_name %>"></label><label>تلفن<input required name="store_phone" value="<%= settings.store_phone %>"></label><label>نشانی<textarea name="store_address"><%= settings.store_address %></textarea></label><label>هزینه ارسال (تومان)<input type="number" min="0" name="shipping_cost" value="<%= settings.shipping_cost %>"></label><button class="btn">ذخیره تنظیمات</button></form></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title"><h1>تنظیمات فروشگاه</h1></div>
+
+<form action="/admin/settings" method="post">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <div class="box">
+    <h3>اطلاعات فروشگاه</h3>
+    <div class="form-grid">
+      <div class="field"><label>نام فروشگاه</label>
+        <input type="text" name="store_name" value="<%= s.store_name %>" required></div>
+      <div class="field"><label>تلفن</label>
+        <input type="text" name="store_phone" value="<%= s.store_phone %>" dir="ltr"></div>
+      <div class="field full"><label>نشانی</label>
+        <input type="text" name="store_address" value="<%= s.store_address %>"></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>ارسال و حمل‌ونقل</h3>
+    <div class="form-grid">
+      <div class="field"><label>هزینه ارسال (تومان)</label>
+        <input type="number" name="shipping_cost" min="0" step="1000" value="<%= s.shipping_cost %>">
+        <div class="hint">مبلغ پیش‌فرض در خریدهای عادی</div></div>
+      <div class="field"><label>ارسال رایگان از (تومان)</label>
+        <input type="number" name="free_shipping_over" min="0" step="10000" value="<%= s.free_shipping_over %>">
+        <div class="hint">خرید بالاتر از این مبلغ، ارسال رایگان دارد</div></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3>حساب مدیر</h3>
+    <p class="muted" style="font-size:13px">
+      نام کاربری و رمز عبور مدیر از فایل <code>.env</code> خوانده می‌شود
+      (<code>ADMIN_USERNAME</code> و <code>ADMIN_PASSWORD</code>). برای تغییر، آن فایل را ویرایش کنید.
+    </p>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:24px">
+    <button class="btn" type="submit">ذخیره تنظیمات</button>
+    <a class="btn btn-ghost" href="/admin">انصراف</a>
+  </div>
+</form>
+
+<%- include('_bottom') %>

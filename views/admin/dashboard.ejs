@@ -1,1 +1,60 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><div class="adminhead"><div><h1>داشبورد</h1><small><%= faDate(new Date()) %></small></div><a class="btn" href="/admin/products/new">+ افزودن محصول</a></div><div class="stats"><div>کل سفارش‌ها<strong><%= money(totalOrders) %></strong></div><div>فروش امروز<strong><%= money(today) %> تومان</strong></div><div>کل محصولات<strong><%= money(totalProducts) %></strong></div><div>هشدار موجودی<strong><%= money(lowStock.length) %></strong></div></div><div class="panel"><h2>سفارش‌های اخیر</h2><div class="tablewrap"><table><tr><th>کد پیگیری</th><th>گیرنده</th><th>مبلغ</th><th>وضعیت</th><th>تاریخ شمسی</th><th></th></tr><% latest.forEach(o=>{ %><tr><td><%= o.tracking_code %></td><td><%= o.recipient %></td><td><%= money(o.total) %></td><td><%= o.status %></td><td><%= faDate(o.created_at) %></td><td><a href="/admin/orders/<%= o.id %>">جزئیات</a></td></tr><% }) %></table></div></div><div class="panel"><h2>کمبود موجودی</h2><% lowStock.forEach(p=>{ %><p><%= p.name %> — موجودی: <%= money(p.stock) %> <a href="/admin/products/<%= p.id %>/edit">ویرایش</a></p><% }) %></div></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title"><h1>داشبورد</h1><span class="muted" style="font-size:13px">نمای کلی فروشگاه امروز</span></div>
+
+<div class="cards">
+  <div class="stat"><div class="k">تعداد سفارش‌ها</div><div class="v"><%= fa(stats.orders) %></div></div>
+  <div class="stat"><div class="k">فروش امروز</div><div class="v green-c"><%= money(stats.todaySales) %> <small style="font-size:12px">تومان</small></div></div>
+  <div class="stat"><div class="k">تعداد کالاها</div><div class="v"><%= fa(stats.products) %></div></div>
+  <div class="stat"><div class="k">کالاهای کم‌موجودی</div><div class="v <%= stats.lowStock > 0 ? 'red-c' : '' %>"><%= fa(stats.lowStock) %></div></div>
+</div>
+
+<div class="cards">
+  <div class="stat"><div class="k">سفارش‌های در انتظار</div><div class="v red-c"><%= fa(stats.pending) %></div></div>
+  <div class="stat"><div class="k">تعداد مشتریان</div><div class="v"><%= fa(stats.customers) %></div></div>
+  <div class="stat"><div class="k">دسته‌بندی‌ها</div><div class="v"><%= fa(counts.categories) %></div></div>
+  <div class="stat"><div class="k">برندهای خودرو</div><div class="v"><%= fa(counts.brands) %></div></div>
+</div>
+
+<% if (low.length) { %>
+<div class="box">
+  <h3>⚠ کالاهای کم‌موجودی (۵ عدد یا کمتر)</h3>
+  <table class="table">
+    <thead><tr><th>کالا</th><th>موجودی</th><th></th></tr></thead>
+    <tbody>
+      <% low.forEach(function (p) { %>
+        <tr>
+          <td><%= p.name %></td>
+          <td class="red"><strong><%= fa(p.stock) %></strong></td>
+          <td><div class="acts"><a class="btn btn-sm btn-ghost" href="/admin/products/<%= p.id %>/edit">ویرایش</a></div></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } %>
+
+<div class="box">
+  <h3>آخرین سفارش‌ها</h3>
+  <% if (!latest.length) { %>
+    <p class="muted">هنوز سفارشی ثبت نشده است.</p>
+  <% } else { %>
+  <table class="table">
+    <thead><tr><th>کد</th><th>گیرنده</th><th>مبلغ</th><th>تاریخ (شمسی)</th><th>وضعیت</th><th></th></tr></thead>
+    <tbody>
+      <% latest.forEach(function (o) { %>
+        <tr>
+          <td dir="ltr"><strong><%= o.code %></strong></td>
+          <td><%= o.receiver %></td>
+          <td><%= money(o.total) %> تومان</td>
+          <td><%= dateTimeFa(o.created_at) %></td>
+          <td><span class="status st-<%= o.status %>"><%= statuses[o.status] %></span></td>
+          <td><div class="acts"><a class="btn btn-sm btn-ghost" href="/admin/orders/<%= o.id %>">جزئیات</a></div></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+<%- include('_bottom') %>

@@ -1,1 +1,97 @@
-<%- include('partials/head',{title,categories:[]}) %><h1 class="pagetitle">تکمیل سفارش</h1><form method="post" action="/checkout" class="cartlayout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><section class="panel"><h2>اطلاعات ارسال</h2><div class="formgrid"><label>نام گیرنده<input required name="recipient"></label><label>شماره تماس<input required name="phone"></label><label>استان<input required name="province"></label><label>شهر<input required name="city"></label><label>کد پستی<input name="postal_code"></label><label class="span2">نشانی کامل<textarea required name="address"></textarea></label><label class="span2">توضیحات<textarea name="note"></textarea></label></div><h2>روش پرداخت</h2><label><input type="radio" name="payment_method" value="cod" checked> پرداخت در محل</label><label><input type="radio" name="payment_method" value="demo"> پرداخت اینترنتی (درگاه آزمایشی؛ بدون تراکنش واقعی)</label></section><aside class="panel summary"><h2>خلاصه سفارش</h2><% items.forEach(i=>{ %><div><span><%= i.name %> × <%= money(i.qty) %></span><b><%= money(i.lineTotal) %></b></div><% }) %><hr><div><span>جمع کالاها</span><b><%= money(subtotal) %></b></div><div><span>ارسال</span><b><%= money(shippingCost) %></b></div><h3><%= money(subtotal+shippingCost) %> تومان</h3><button class="btn wide">ثبت سفارش</button></aside></form><%- include('partials/foot') %>
+<%- include('partials/head') %>
+
+<h1>تسویه و پرداخت</h1>
+
+<% if (error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+<div class="two-col">
+  <form action="/checkout" method="post" id="checkout-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <% if (addresses && addresses.length) { %>
+    <div class="panel">
+      <h3>انتخاب از نشانی‌های ذخیره‌شده</h3>
+      <% addresses.forEach(function (a, i) { %>
+        <label class="radio-card">
+          <input type="radio" name="address_id" value="<%= a.id %>" <%= i === 0 ? 'checked' : '' %>>
+          <span>
+            <span class="rc-title"><%= a.receiver %> — <%= a.city || a.province %></span><br>
+            <span class="rc-desc"><%= a.address %> | کد پستی: <%= a.postal || '—' %></span>
+          </span>
+        </label>
+      <% }) %>
+      <p class="muted" style="margin:0;font-size:12.5px">با انتخاب یکی از نشانی‌ها، فیلدهای پایین به‌صورت خودکار پر می‌شوند؛ در صورت تمایل می‌توانید نشانی جدیدی وارد کنید.</p>
+    </div>
+    <% } %>
+
+    <div class="panel">
+      <h3>نشانی گیرنده</h3>
+      <div class="row">
+        <div class="field"><label>نام گیرنده *</label>
+          <input type="text" name="receiver" required value="<%= old.receiver || (user ? user.name : '') %>"></div>
+        <div class="field"><label>موبایل *</label>
+          <input type="tel" name="phone" required dir="ltr" pattern="09[0-9]{9}" value="<%= old.phone || (user ? user.phone : '') %>"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>استان</label><input type="text" name="province" value="<%= old.province || '' %>"></div>
+        <div class="field"><label>شهر</label><input type="text" name="city" value="<%= old.city || '' %>"></div>
+      </div>
+      <div class="field"><label>نشانی کامل *</label>
+        <textarea name="address" required minlength="12"><%= old.address || '' %></textarea></div>
+      <div class="field"><label>کد پستی</label>
+        <input type="text" name="postal" dir="ltr" pattern="[0-9]{10}" placeholder="1234567890" value="<%= old.postal || '' %>">
+        <div class="hint">در صورت نداشتن، خالی بگذارید.</div>
+      </div>
+      <div class="field"><label>یادداشت سفارش</label>
+        <textarea name="note" style="min-height:70px"><%= old.note || '' %></textarea></div>
+    </div>
+
+    <div class="panel">
+      <h3>روش ارسال</h3>
+      <% shipping.forEach(function (s, i) { %>
+        <label class="radio-card">
+          <input type="radio" name="shipping" value="<%= s.id %>" <%= i === 0 ? 'checked' : '' %>>
+          <span>
+            <span class="rc-title"><%= s.name %> — <%= totals.ship === 0 ? 'رایگان' : money(s.cost) + ' تومان' %></span><br>
+            <span class="rc-desc"><%= s.desc %></span>
+          </span>
+        </label>
+      <% }) %>
+      <% if (totals.ship === 0) { %>
+        <p class="muted" style="margin:0;font-size:12.5px">✓ سبد خرید شما بالای <%= money(totals.freeOver) %> تومان است و ارسال رایگان دارد.</p>
+      <% } %>
+    </div>
+
+    <div class="panel">
+      <h3>روش پرداخت</h3>
+      <label class="radio-card">
+        <input type="radio" name="payment" value="cod" checked>
+        <span><span class="rc-title">پرداخت در محل</span><br>
+        <span class="rc-desc">مبلغ را هنگام تحویل کالا پرداخت می‌کنید.</span></span>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="payment" value="online">
+        <span><span class="rc-title">پرداخت اینترنتی — درگاه نمایشی</span><br>
+        <span class="rc-desc">فقط برای آزمایش فرایند خرید؛ هیچ تراکنش واقعی انجام نمی‌شود.</span></span>
+      </label>
+    </div>
+
+    <button class="btn btn-block" type="submit" style="min-height:48px">ثبت نهایی سفارش</button>
+  </form>
+
+  <aside class="summary">
+    <h3>خلاصه سفارش</h3>
+    <% cart.items.forEach(function (it) { %>
+      <div class="line" style="font-size:13px">
+        <span><%= it.name %> × <%= fa(it.qty) %></span>
+        <span><%= money(it.line) %></span>
+      </div>
+    <% }) %>
+    <div class="line"><span>جمع کالاها</span><span><%= money(cart.subtotal) %> تومان</span></div>
+    <div class="line"><span>هزینه ارسال</span><span><%= totals.ship === 0 ? 'رایگان' : money(totals.ship) + ' تومان' %></span></div>
+    <div class="line total"><span>مبلغ قابل پرداخت</span><span><%= money(totals.total) %> تومان</span></div>
+    <p class="muted" style="font-size:12.5px;margin-top:10px">با ثبت سفارش، <a class="red" href="/page/terms">شرایط استفاده</a> و <a class="red" href="/page/returns">شرایط بازگشت کالا</a> را می‌پذیرید.</p>
+  </aside>
+</div>
+
+<%- include('partials/foot') %>

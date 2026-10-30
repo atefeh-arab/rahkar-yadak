@@ -1,1 +1,64 @@
-<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= title %> | <%= storeName %></title><link rel="icon" href="/images/favicon.svg"><link rel="stylesheet" href="/public/css/style.css"><script defer src="/public/js/store.js"></script></head><body><div class="topbar"><div class="container"><span>ارسال مطمئن قطعات خودرو</span><span>پشتیبانی: <%= storePhone %></span><a href="/track">پیگیری سفارش</a></div></div><header class="container header"><a class="brand" href="/"><img src="/images/logo.svg" alt=""><span><b><%= storeName %></b><small>همراه مطمئن خودروی شما</small></span></a><form class="search" action="/products"><input id="site-search" name="q" value="<%= typeof query!=='undefined'&&query.q?query.q:'' %>" placeholder="نام قطعه، کد فنی یا برند را جست‌وجو کنید" autocomplete="off"><button>جست‌وجو</button><div id="suggestions" class="suggestions"></div></form><div class="actions"><a href="/cart">سبد خرید <i><%= cartCount %></i></a><% if(user){ %><a href="/profile">حساب من</a><% }else{ %><a href="/login">ورود / ثبت‌نام</a><% } %></div></header><nav class="nav"><div class="container"><a href="/products">همه قطعات</a><% (typeof categories!=='undefined'?categories:[]).slice(0,10).forEach(c=>{ %><a href="/category/<%= c.slug %>"><%= c.name %></a><% }) %><% if(user&&user.role==='admin'){ %><a href="/admin">مدیریت</a><% } %></div></nav><main class="container main"><% if(flash){ %><div class="flash <%= flash.type %>"><%= flash.text %></div><% } %>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> | <%= storeName %></title>
+<meta name="description" content="فروشگاه اینترنتی قطعات یدکی خودرو — فیلتر بر اساس برند، مدل و سال خودرو">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container">
+    <span>ارسال به سراسر کشور &bull; ضمانت اصالت کالا &bull; پرداخت در محل</span>
+    <span class="hide-sm">تلفن پشتیبانی: <%= storePhone %></span>
+  </div>
+</div>
+
+<header class="header">
+  <div class="container">
+    <a class="logo" href="/"><img src="/images/logo.svg" alt="<%= storeName %>"></a>
+
+    <div class="search">
+      <form action="/search" method="get" role="search">
+        <input id="search-box" type="search" name="q" autocomplete="off"
+               placeholder="جست‌وجوی قطعه، کد فنی (OEM) یا برند..."
+               value="<%= (query && query.q) ? query.q : '' %>">
+        <button type="submit">جست‌وجو</button>
+      </form>
+      <div class="suggest" id="suggest"></div>
+    </div>
+
+    <div class="head-actions">
+      <% if (user) { %>
+        <a class="head-btn" href="/account"><span class="lbl"><%= user.name.split(' ')[0] %></span> 👤</a>
+        <a class="head-btn" href="/orders"><span class="lbl">سفارش‌ها</span> 📦</a>
+      <% } else { %>
+        <a class="head-btn" href="/login"><span class="lbl">ورود / ثبت‌نام</span> 👤</a>
+      <% } %>
+      <a class="head-btn" href="/cart"><span class="lbl">سبد خرید</span> 🛒
+        <span class="cart-badge"><%= fa(cartCount) %></span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="container">
+    <a href="/products" <%= path === '/products' && !query.cat ? 'class="active"' : '' %>>همه کالاها</a>
+    <% navCategories.forEach(function (c) { %>
+      <a href="/products?cat=<%= c.slug %>"><%= c.name %></a>
+    <% }) %>
+    <a href="/track">پیگیری سفارش</a>
+  </div>
+</nav>
+
+<% if (flash) { %>
+  <div class="container" style="margin-top:14px">
+    <div class="alert <%= flash.type === 'ok' ? 'alert-ok' : 'alert-err' %>" data-autohide><%= flash.text %></div>
+  </div>
+<% } %>
+
+<main class="container" style="padding-top:16px;padding-bottom:20px">

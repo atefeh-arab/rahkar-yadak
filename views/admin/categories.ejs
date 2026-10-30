@@ -1,1 +1,49 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><h1>دسته‌ها و خودروها</h1><div class="twocol"><div class="panel"><h2>دسته‌بندی‌ها</h2><form class="inline" method="post" action="/admin/categories"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input required name="name" placeholder="نام دسته"><button class="btn">افزودن</button></form><% categories.forEach(c=>{ %><div class="listrow"><span><%= c.name %> (<%= money(c.product_count) %>)</span><form method="post" action="/admin/categories/<%= c.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="textbtn">حذف</button></form></div><% }) %></div><div class="panel"><h2>برند خودرو</h2><form class="inline" method="post" action="/admin/car-brands"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input required name="name" placeholder="نام برند"><button class="btn">افزودن</button></form><% brands.forEach(b=>{ %><div class="listrow"><span><%= b.name %></span><form method="post" action="/admin/car-brands/<%= b.id %>/delete"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="textbtn">حذف</button></form></div><% }) %><h2>مدل خودرو</h2><form class="inline" method="post" action="/admin/car-models"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><select name="brand_id"><% brands.forEach(b=>{ %><option value="<%= b.id %>"><%= b.name %></option><% }) %></select><input required name="name" placeholder="مدل"><button class="btn">افزودن</button></form><% models.forEach(m=>{ %><div class="listrow"><%= m.brand_name %> — <%= m.name %></div><% }) %></div></div></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title"><h1>دسته‌بندی‌ها</h1></div>
+
+<div class="box">
+  <h3>افزودن دسته‌بندی جدید</h3>
+  <form action="/admin/categories" method="post" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input class="input" style="max-width:320px" type="text" name="name" required minlength="2" placeholder="مثلاً: سیستم تعلیق">
+    <button class="btn" type="submit">افزودن</button>
+  </form>
+</div>
+
+<div class="box">
+  <h3>فهرست دسته‌بندی‌ها</h3>
+  <% if (!rows.length) { %><p class="muted">دسته‌بندی‌ای وجود ندارد.</p><% } else { %>
+  <table class="table">
+    <thead><tr><th>نام</th><th>اسلاگ</th><th>تعداد کالا</th><th></th></tr></thead>
+    <tbody>
+      <% rows.forEach(function (c) { %>
+        <tr>
+          <form action="/admin/categories/<%= c.id %>" method="post">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <td><input class="input" type="text" name="name" value="<%= c.name %>" required></td>
+            <td dir="ltr"><small><%= c.slug %></small></td>
+            <td><%= fa(c.n) %></td>
+            <td>
+              <div class="acts">
+                <button class="btn btn-sm btn-ghost" type="submit">ذخیره</button>
+              </div>
+            </td>
+          </form>
+          <td>
+            <div class="acts">
+              <a class="btn btn-sm btn-outline" href="/products?cat=<%= c.slug %>" target="_blank" rel="noopener">مشاهده در سایت</a>
+              <form action="/admin/categories/<%= c.id %>/delete" method="post" data-confirm="دسته‌بندی «<%= c.name %>» حذف شود؟ کالاهای آن بدون دسته می‌مانند.">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-danger" type="submit">حذف</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+<%- include('_bottom') %>

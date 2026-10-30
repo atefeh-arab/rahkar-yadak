@@ -1,1 +1,27 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="adminlayout"><%- include('nav') %><section><h1>مشتریان</h1><div class="panel tablewrap"><table><tr><th>نام</th><th>ایمیل</th><th>تلفن</th><th>عضویت</th></tr><% users.forEach(u=>{ %><tr><td><%= u.name %></td><td><%= u.email %></td><td><%= u.phone %></td><td><%= faDate(u.created_at) %></td></tr><% }) %></table></div></section></div><%- include('../partials/foot') %>
+<%- include('_top') %>
+
+<div class="admin-title"><h1>مشتریان <span class="muted" style="font-size:13px">(<%= fa(rows.length) %> نفر)</span></h1></div>
+
+<div class="box">
+  <% if (!rows.length) { %>
+    <p class="muted">هنوز مشتری‌ای ثبت‌نام نکرده است.</p>
+  <% } else { %>
+  <table class="table">
+    <thead><tr><th>نام</th><th>ایمیل</th><th>موبایل</th><th>تاریخ عضویت</th><th>تعداد سفارش</th><th>مجموع خرید</th></tr></thead>
+    <tbody>
+      <% rows.forEach(function (u) { %>
+        <tr>
+          <td><strong><%= u.name %></strong></td>
+          <td dir="ltr"><small><%= u.email %></small></td>
+          <td dir="ltr"><%= u.phone || '—' %></td>
+          <td><%= dateFa(u.created_at) %></td>
+          <td><%= fa(u.orders) %></td>
+          <td><%= money(u.spent) %> تومان</td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+<%- include('_bottom') %>

@@ -1,0 +1,96 @@
+<%- include('partials/head') %>
+
+<h1>حساب کاربری</h1>
+
+<div class="acct">
+  <nav class="acct-nav">
+    <a href="/account" class="<%= tab === 'profile' ? 'active' : '' %>">اطلاعات پروفایل</a>
+    <a href="/account?tab=addresses" class="<%= tab === 'addresses' ? 'active' : '' %>">نشانی‌های من</a>
+    <a href="/orders">سفارش‌های من</a>
+    <form action="/logout" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" style="width:100%;text-align:right;background:none;border:0;padding:12px 14px;cursor:pointer;font-weight:700;font-size:13.5px">خروج از حساب</button>
+    </form>
+  </nav>
+
+  <div>
+    <% if (tab === 'addresses') { %>
+
+      <div class="panel">
+        <h3>نشانی‌های ذخیره‌شده</h3>
+        <% if (!addresses.length) { %>
+          <p class="muted">هنوز نشانی ثبت نکرده‌اید.</p>
+        <% } else { %>
+          <% addresses.forEach(function (a) { %>
+            <div class="radio-card" style="cursor:default">
+              <span style="flex:1">
+                <span class="rc-title"><%= a.receiver %> — <%= a.city || a.province || '' %>
+                  <% if (a.is_default) { %><span class="chip" style="margin-inline-start:6px">پیش‌فرض</span><% } %>
+                </span><br>
+                <span class="rc-desc"><%= a.address %></span><br>
+                <span class="rc-desc">موبایل: <span dir="ltr"><%= a.phone %></span> | کد پستی: <span dir="ltr"><%= a.postal || '—' %></span></span>
+              </span>
+              <form action="/addresses/<%= a.id %>/delete" method="post" data-confirm="این نشانی حذف شود؟">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-danger" type="submit">حذف</button>
+              </form>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <div class="panel">
+        <h3>افزودن نشانی جدید</h3>
+        <form action="/addresses" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="row">
+            <div class="field"><label>نام گیرنده *</label><input type="text" name="receiver" required></div>
+            <div class="field"><label>موبایل *</label><input type="tel" name="phone" required dir="ltr" pattern="09[0-9]{9}"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>استان</label><input type="text" name="province"></div>
+            <div class="field"><label>شهر</label><input type="text" name="city"></div>
+          </div>
+          <div class="field"><label>نشانی کامل *</label><textarea name="address" required minlength="10"></textarea></div>
+          <div class="row">
+            <div class="field"><label>کد پستی</label><input type="text" name="postal" dir="ltr" pattern="[0-9]{10}"></div>
+            <div class="field"><label>&nbsp;</label>
+              <label class="check"><input type="checkbox" name="is_default" value="1"> عنوان پیش‌فرض</label></div>
+          </div>
+          <button class="btn" type="submit">ذخیره نشانی</button>
+        </form>
+      </div>
+
+    <% } else { %>
+
+      <div class="panel">
+        <h3>اطلاعات پروفایل</h3>
+        <form action="/account" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="row">
+            <div class="field"><label>نام و نام خانوادگی</label><input type="text" name="name" value="<%= user.name %>" required minlength="3"></div>
+            <div class="field"><label>موبایل</label><input type="tel" name="phone" value="<%= user.phone %>" dir="ltr" pattern="09[0-9]{9}" required></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>ایمیل</label><input type="email" value="<%= user.email %>" dir="ltr" readonly style="background:#f7f7f7"></div>
+            <div class="field"><label>تاریخ عضویت</label><input type="text" value="<%= dateFa(user.created_at) %>" readonly style="background:#f7f7f7"></div>
+          </div>
+          <button class="btn" type="submit">ذخیره تغییرات</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h3>خلاصه خرید</h3>
+        <div class="line" style="display:flex;justify-content:space-between;padding:6px 0">
+          <span>تعداد سفارش‌ها</span><strong><%= fa(orders.length) %></strong></div>
+        <div class="line" style="display:flex;justify-content:space-between;padding:6px 0">
+          <span>مجموع خرید</span>
+          <strong class="red"><%= money(orders.filter(function(o){return o.status !== 'cancelled'}).reduce(function(a,o){return a + o.total}, 0)) %> تومان</strong></div>
+        <a class="btn btn-ghost" href="/orders" style="margin-top:8px">مشاهده سفارش‌ها</a>
+      </div>
+
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/foot') %>

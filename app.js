@@ -1,21 +1,193 @@
-require('dotenv').config();const express=require('express'),session=require('express-session'),SQLiteStore=require('connect-sqlite3')(session),helmet=require('helmet'),rateLimit=require('express-rate-limit'),bcrypt=require('bcrypt'),multer=require('multer'),path=require('path'),fs=require('fs'),crypto=require('crypto'),db=require('./models/db');const app=express(),PORT=process.env.PORT||3000;fs.mkdirSync('uploads',{recursive:true});app.set('view engine','ejs');app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],styleSrc:["'self'","'unsafe-inline'"],scriptSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'","data:"],fontSrc:["'self'"],connectSrc:["'self'"]}}}));app.use(express.urlencoded({extended:false,limit:'100kb'}));app.use(express.json());app.use('/public',express.static('public'));app.use('/images',express.static('public/images'));app.use('/uploads',express.static('uploads'));app.use(session({store:new SQLiteStore({db:'sessions.sqlite',dir:path.join(__dirname,'data')}),secret:process.env.SESSION_SECRET||'change-me-in-env',resave:false,saveUninitialized:false,cookie:{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',maxAge:28800000}}));const limiter=rateLimit({windowMs:900000,max:12});const setting=k=>db.prepare('SELECT value FROM settings WHERE key=?').get(k)?.value;const money=n=>new Intl.NumberFormat('fa-IR').format(Math.round(+n||0));const date=d=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'medium',timeStyle:'short'}).format(new Date(d));const num=(v,d=0)=>Number.isFinite(parseInt(v,10))?parseInt(v,10):d;const slug=s=>String(s).trim().replace(/[^\p{L}\p{N}]+/gu,'-').slice(0,70)+'-'+crypto.randomBytes(3).toString('hex');const cats=()=>db.prepare('SELECT c.*,COUNT(p.id) product_count FROM categories c LEFT JOIN products p ON p.category_id=c.id GROUP BY c.id ORDER BY c.id').all();const product=id=>db.prepare('SELECT p.*,c.name category_name FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE p.id=?').get(id);const csrf=(req,res,next)=>{req.session.csrf ||=crypto.randomBytes(24).toString('hex');res.locals.csrfToken=req.session.csrf;next()};app.use(csrf);app.use((req,res,next)=>{res.locals.user=req.session.user||null;res.locals.storeName=setting('store_name')||'راهکار یدک';res.locals.storePhone=setting('store_phone')||'021-55500000';res.locals.storeAddress=setting('store_address')||'تهران';res.locals.money=money;res.locals.faDate=date;res.locals.cartCount=(req.session.cart||[]).reduce((a,x)=>a+x.qty,0);res.locals.flash=req.session.flash||null;delete req.session.flash;next()});app.use((req,res,next)=>{if(['POST','PUT','PATCH','DELETE'].includes(req.method)&&(!req.body._csrf||req.body._csrf!==req.session.csrf))return res.status(403).render('error',{title:'درخواست نامعتبر',message:'صفحه را تازه‌سازی کنید و دوباره تلاش کنید.'});next()});const auth=(req,res,next)=>req.session.user?next():res.redirect('/login'),admin=(req,res,next)=>req.session.user?.role==='admin'?next():res.redirect('/admin/login');const cart=req=>(req.session.cart||[]).map(i=>{const p=product(i.id);return p?{...p,qty:i.qty,lineTotal:Math.round(p.price*(100-p.discount)/100)*i.qty}:null}).filter(Boolean),sum=items=>items.reduce((a,i)=>a+i.lineTotal,0);
-app.get('/',(req,res)=>{const all=sql=>db.prepare(sql).all();res.render('home',{title:'فروشگاه قطعات خودرو',categories:cats(),best:all('SELECT p.*,c.name category_name FROM products p LEFT JOIN categories c ON c.id=p.category_id ORDER BY sales DESC LIMIT 8'),newest:all('SELECT p.*,c.name category_name FROM products p LEFT JOIN categories c ON c.id=p.category_id ORDER BY id DESC LIMIT 8'),discounted:all('SELECT p.*,c.name category_name FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE discount>0 ORDER BY discount DESC LIMIT 8')})});
-function listing(req,res){let page=Math.max(1,num(req.query.page,1)),where=['1=1'],args=[];const add=(s,v)=>{where.push(s);args.push(v)};if(req.query.q){const q='%'+String(req.query.q).slice(0,80)+'%';where.push('(p.name LIKE ? OR p.part_number LIKE ? OR p.brand LIKE ?)');args.push(q,q,q)}if(req.query.category)add('c.slug=?',String(req.query.category));if(req.query.car_brand)add('p.car_brand=?',String(req.query.car_brand));if(req.query.car_model)add('p.car_model LIKE ?','%'+String(req.query.car_model)+'%');if(req.query.part_brand)add('p.brand LIKE ?','%'+String(req.query.part_brand)+'%');if(req.query.min_price)add('p.price>=?',Math.max(0,num(req.query.min_price)));if(req.query.max_price)add('p.price<=?',Math.max(0,num(req.query.max_price)));if(req.query.available==='1')where.push('p.stock>0');const sort=({cheapest:'p.price ASC',expensive:'p.price DESC',bestselling:'p.sales DESC',newest:'p.id DESC'})[req.query.sort]||'p.id DESC',base=`FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE ${where.join(' AND ')}`,total=db.prepare('SELECT COUNT(*) n '+base).get(...args).n,products=db.prepare('SELECT p.*,c.name category_name '+base+' ORDER BY '+sort+' LIMIT 12 OFFSET ?').all(...args,(page-1)*12);res.render('products',{title:'فهرست قطعات',products,categories:cats(),carBrands:db.prepare('SELECT * FROM car_brands').all(),page,total,pages:Math.max(1,Math.ceil(total/12)),query:req.query})}
-app.get('/products',listing);app.get('/category/:slug',(req,res)=>{req.query.category=req.params.slug;listing(req,res)});app.get('/search/suggest',(req,res)=>{const q=String(req.query.q||'').slice(0,80);if(q.length<2)return res.json([]);res.json(db.prepare('SELECT id,name,price,discount,image FROM products WHERE name LIKE ? OR part_number LIKE ? LIMIT 7').all('%'+q+'%','%'+q+'%').map(p=>({id:p.id,name:p.name,price:money(p.price*(100-p.discount)/100),image:p.image})))});
-app.get('/product/:id',(req,res)=>{const p=product(num(req.params.id));if(!p)return res.status(404).render('error',{title:'کالا پیدا نشد',message:'این کالا وجود ندارد.'});let specs={};try{specs=JSON.parse(p.specs)}catch{}res.render('product',{title:p.name,p,specs,related:db.prepare('SELECT * FROM products WHERE category_id=? AND id<>? LIMIT 4').all(p.category_id,p.id)})});
-app.get('/cart',(req,res)=>{const items=cart(req);res.render('cart',{title:'سبد خرید',items,subtotal:sum(items)})});app.post('/cart/add',(req,res)=>{const id=num(req.body.product_id),qty=Math.max(1,Math.min(20,num(req.body.qty,1))),p=product(id);if(!p||!p.stock){req.session.flash={type:'error',text:'کالا پیدا نشد یا ناموجود است.'};return res.redirect('/products')}req.session.cart||=[];const old=req.session.cart.find(i=>i.id===id);if(old)old.qty=Math.min(p.stock,old.qty+qty);else req.session.cart.push({id,qty:Math.min(p.stock,qty)});req.session.flash={type:'success',text:'کالا به سبد خرید اضافه شد.'};res.redirect('/cart')});app.post('/cart/update',(req,res)=>{const id=num(req.body.product_id),p=product(id),qty=Math.max(0,Math.min(p?.stock||0,num(req.body.qty)));req.session.cart=(req.session.cart||[]).map(i=>i.id===id?{...i,qty}:i).filter(i=>i.qty);res.redirect('/cart')});app.post('/cart/remove',(req,res)=>{req.session.cart=(req.session.cart||[]).filter(i=>i.id!==num(req.body.product_id));res.redirect('/cart')});
-app.get('/register',(req,res)=>res.render('auth',{title:'ثبت‌نام',mode:'register'}));app.post('/register',limiter,async(req,res)=>{const name=String(req.body.name||'').trim().slice(0,100),email=String(req.body.email||'').trim().toLowerCase(),phone=String(req.body.phone||'').slice(0,20),pass=String(req.body.password||'');if(name.length<2||!/^[-.\w+]+@[-.\w]+\.[A-Za-z]{2,}$/.test(email)||pass.length<8){req.session.flash={type:'error',text:'اطلاعات یا رمز عبور معتبر نیست.'};return res.redirect('/register')}try{const r=db.prepare('INSERT INTO users(name,email,phone,password_hash) VALUES(?,?,?,?)').run(name,email,phone,await bcrypt.hash(pass,12));req.session.user={id:r.lastInsertRowid,name,email,role:'customer'};res.redirect('/profile')}catch{req.session.flash={type:'error',text:'این ایمیل قبلاً ثبت شده است.'};res.redirect('/register')}});app.get('/login',(req,res)=>res.render('auth',{title:'ورود',mode:'login'}));app.post('/login',limiter,async(req,res)=>{const email=String(req.body.email||'').trim().toLowerCase(),u=db.prepare('SELECT * FROM users WHERE email=?').get(email);if(!u||!(await bcrypt.compare(String(req.body.password||''),u.password_hash))){req.session.flash={type:'error',text:'ایمیل یا رمز اشتباه است.'};return res.redirect('/login')}req.session.regenerate(e=>{if(e)return res.status(500).send('خطای نشست');req.session.user={id:u.id,name:u.name,email:u.email,role:u.role};req.session.cart=req.session.cart||[];res.redirect(u.role==='admin'?'/admin':'/profile')})});app.post('/logout',(req,res)=>req.session.destroy(()=>res.redirect('/')));
-app.get('/profile',auth,(req,res)=>res.render('profile',{title:'حساب کاربری',addresses:db.prepare('SELECT * FROM addresses WHERE user_id=?').all(req.session.user.id),orders:db.prepare('SELECT * FROM orders WHERE user_id=? ORDER BY id DESC').all(req.session.user.id)}));app.post('/profile/address',auth,(req,res)=>{const v=['recipient','phone','province','city','postal_code','address'].map(k=>String(req.body[k]||'').trim().slice(0,500));if(v[0].length<2||v[1].length<7||v[2].length<2||v[3].length<2||v[5].length<8){req.session.flash={type:'error',text:'نشانی را کامل کنید.'};return res.redirect('/profile')}db.prepare('INSERT INTO addresses(user_id,title,recipient,phone,province,city,postal_code,address) VALUES(?,?,?,?,?,?,?,?)').run(req.session.user.id,String(req.body.title||'خانه'),...v);res.redirect('/profile')});app.post('/profile/address/:id/delete',auth,(req,res)=>{db.prepare('DELETE FROM addresses WHERE id=? AND user_id=?').run(num(req.params.id),req.session.user.id);res.redirect('/profile')});
-app.get('/checkout',auth,(req,res)=>{const items=cart(req);if(!items.length)return res.redirect('/cart');res.render('checkout',{title:'تکمیل سفارش',items,subtotal:sum(items),shippingCost:num(setting('shipping_cost'),85000),addresses:db.prepare('SELECT * FROM addresses WHERE user_id=?').all(req.session.user.id)})});
-app.post('/checkout',auth,(req,res)=>{const items=cart(req);if(!items.length)return res.redirect('/cart');const f=k=>String(req.body[k]||'').trim().slice(0,500),recipient=f('recipient'),phone=f('phone'),province=f('province'),city=f('city'),postal=f('postal_code'),address=f('address');if(recipient.length<2||phone.length<7||province.length<2||city.length<2||address.length<8){req.session.flash={type:'error',text:'اطلاعات ارسال کامل نیست.'};return res.redirect('/checkout')}if(items.some(i=>i.qty>i.stock)){req.session.flash={type:'error',text:'موجودی کالا تغییر کرده؛ سبد را بررسی کنید.'};return res.redirect('/cart')}const subtotal=sum(items),shipping=num(setting('shipping_cost'),85000),payment=req.body.payment_method==='demo'?'demo':'cod',code='RY-'+Date.now().toString(36).toUpperCase()+'-'+crypto.randomBytes(2).toString('hex').toUpperCase();let oid;try{oid=db.transaction(()=>{const r=db.prepare('INSERT INTO orders(user_id,tracking_code,status,payment_method,subtotal,shipping_cost,total,recipient,phone,province,city,postal_code,address,note) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(req.session.user.id,code,'pending',payment,subtotal,shipping,subtotal+shipping,recipient,phone,province,city,postal,address,f('note'));const add=db.prepare('INSERT INTO order_items(order_id,product_id,name,price,quantity,image) VALUES(?,?,?,?,?,?)'),upd=db.prepare('UPDATE products SET stock=stock-?,sales=sales+? WHERE id=? AND stock>=?');items.forEach(i=>{add.run(r.lastInsertRowid,i.id,i.name,Math.round(i.price*(100-i.discount)/100),i.qty,i.image);if(!upd.run(i.qty,i.qty,i.id,i.qty).changes)throw Error('stock')});return r.lastInsertRowid})()}catch{return res.redirect('/cart')}req.session.cart=[];res.redirect(payment==='demo'?'/payment-demo/'+oid:'/order/'+oid)});
-app.get('/payment-demo/:id',auth,(req,res)=>{const order=db.prepare('SELECT * FROM orders WHERE id=? AND user_id=?').get(num(req.params.id),req.session.user.id);if(!order)return res.status(404).render('error',{title:'سفارش پیدا نشد',message:'سفارش موجود نیست.'});res.render('payment-demo',{title:'درگاه آزمایشی',order})});app.post('/payment-demo/:id',auth,(req,res)=>{db.prepare("UPDATE orders SET payment_status='paid-demo' WHERE id=? AND user_id=?").run(num(req.params.id),req.session.user.id);res.redirect('/order/'+num(req.params.id))});app.get('/order/:id',(req,res)=>{const o=db.prepare('SELECT * FROM orders WHERE id=?').get(num(req.params.id));if(!o||!req.session.user||(req.session.user.role!=='admin'&&o.user_id!==req.session.user.id))return res.status(404).render('error',{title:'سفارش پیدا نشد',message:'سفارش موجود نیست.'});res.render('order',{title:'تأیید سفارش',order:o,items:db.prepare('SELECT * FROM order_items WHERE order_id=?').all(o.id)})});app.get('/track',(req,res)=>res.render('track',{title:'پیگیری سفارش',order:null}));app.post('/track',(req,res)=>res.render('track',{title:'پیگیری سفارش',order:db.prepare('SELECT tracking_code,status,created_at FROM orders WHERE tracking_code=?').get(String(req.body.tracking_code||'').slice(0,80))||false}));
-for(const [s,t,c] of [['about','درباره ما','راهکار یدک برای خرید مطمئن قطعات مصرفی و یدکی خودرو فعالیت می‌کند.'],['contact','تماس با ما','تلفن: '+(process.env.STORE_PHONE||'021-55500000')+' — نشانی: '+(process.env.STORE_ADDRESS||'تهران')],['faq','پرسش‌های متداول','برای انتخاب قطعه، کد OEM و مدل خودرو را با مشخصات کالا تطبیق دهید.'],['terms','شرایط استفاده','ثبت سفارش به معنی پذیرش قیمت و شرایط ارسال درج‌شده در سایت است.'],['returns','رویه بازگشت کالا','در صورت مغایرت کالا با سفارش، با پشتیبانی تماس بگیرید و کد پیگیری را اعلام کنید.']])app.get('/'+s,(req,res)=>res.render('static',{title:t,content:c}));
-app.get('/admin/login',(req,res)=>res.render('admin/login',{title:'ورود مدیریت'}));app.post('/admin/login',limiter,async(req,res)=>{const uName=String(req.body.username||''),u=db.prepare("SELECT * FROM users WHERE role='admin' AND (email=? OR name=?)").get(uName,uName);if(!u||!(await bcrypt.compare(String(req.body.password||''),u.password_hash))){req.session.flash={type:'error',text:'اطلاعات ورود نادرست است.'};return res.redirect('/admin/login')}req.session.regenerate(e=>{if(e)return res.status(500).send('خطای نشست');req.session.user={id:u.id,name:u.name,email:u.email,role:'admin'};res.redirect('/admin')})});
-app.get('/admin',admin,(req,res)=>res.render('admin/dashboard',{title:'داشبورد',totalOrders:db.prepare('SELECT count(*) n FROM orders').get().n,totalProducts:db.prepare('SELECT count(*) n FROM products').get().n,today:db.prepare("SELECT COALESCE(sum(total),0) n FROM orders WHERE date(created_at)=date('now','localtime')").get().n,lowStock:db.prepare('SELECT * FROM products WHERE stock<=5 ORDER BY stock LIMIT 8').all(),latest:db.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 8').all()}));
-const updir=path.join(__dirname,'uploads');const storage=multer.diskStorage({destination:updir,filename:(req,f,cb)=>cb(null,Date.now()+'-'+crypto.randomBytes(4).toString('hex')+path.extname(f.originalname).toLowerCase())});const upload=multer({storage,limits:{fileSize:2*1024*1024,files:5},fileFilter:(req,f,cb)=>cb(null,['image/jpeg','image/png','image/webp','image/gif'].includes(f.mimetype))});
-app.get('/admin/products',admin,(req,res)=>res.render('admin/products',{title:'محصولات',products:db.prepare('SELECT p.*,c.name category_name FROM products p LEFT JOIN categories c ON c.id=p.category_id ORDER BY p.id DESC').all()}));app.get('/admin/products/new',admin,(req,res)=>res.render('admin/product-form',{title:'افزودن محصول',p:{},categories:cats(),isNew:true}));app.get('/admin/products/:id/edit',admin,(req,res)=>{const p=product(num(req.params.id));if(!p)return res.redirect('/admin/products');res.render('admin/product-form',{title:'ویرایش محصول',p,categories:cats(),isNew:false})});
-function payload(req,old){const name=String(req.body.name||'').trim().slice(0,180),price=num(req.body.price,-1);if(name.length<2||price<0)throw Error('نام و قیمت معتبر وارد کنید');const image=req.files?.[0]?'/uploads/'+req.files[0].filename:(old?.image||'/images/part.svg');return {name,slug:old?.slug||slug(name),description:String(req.body.description||'').slice(0,4000),category_id:num(req.body.category_id)||null,brand:String(req.body.brand||'').slice(0,100),part_number:String(req.body.part_number||'').slice(0,100),price,discount:Math.max(0,Math.min(90,num(req.body.discount))),stock:Math.max(0,num(req.body.stock)),image,specs:JSON.stringify({'کشور سازنده':String(req.body.origin||'نامشخص'),'گارانتی':String(req.body.warranty||'اصالت کالا')}),compatible:String(req.body.compatible||'').slice(0,500),car_brand:String(req.body.car_brand||'').slice(0,80),car_model:String(req.body.car_model||'').slice(0,80),year_range:String(req.body.year_range||'').slice(0,80),featured:req.body.featured==='1'?1:0}}
-app.post('/admin/products',admin,upload.array('images',5),(req,res)=>{try{const p=payload(req);db.prepare('INSERT INTO products(name,slug,description,category_id,brand,part_number,price,discount,stock,image,specs,compatible,car_brand,car_model,year_range,featured) VALUES(@name,@slug,@description,@category_id,@brand,@part_number,@price,@discount,@stock,@image,@specs,@compatible,@car_brand,@car_model,@year_range,@featured)').run(p);res.redirect('/admin/products')}catch(e){res.status(400).render('error',{title:'خطا',message:'اطلاعات محصول یا فایل تصویر معتبر نیست.'})}});app.post('/admin/products/:id',admin,upload.array('images',5),(req,res)=>{try{const old=product(num(req.params.id));if(!old)return res.redirect('/admin/products');const p=payload(req,old);db.prepare('UPDATE products SET name=?,description=?,category_id=?,brand=?,part_number=?,price=?,discount=?,stock=?,image=?,specs=?,compatible=?,car_brand=?,car_model=?,year_range=?,featured=? WHERE id=?').run(p.name,p.description,p.category_id,p.brand,p.part_number,p.price,p.discount,p.stock,p.image,p.specs,p.compatible,p.car_brand,p.car_model,p.year_range,p.featured,old.id);res.redirect('/admin/products')}catch{res.status(400).render('error',{title:'خطا',message:'اطلاعات محصول معتبر نیست.'})}});app.post('/admin/products/:id/delete',admin,(req,res)=>{db.prepare('DELETE FROM products WHERE id=?').run(num(req.params.id));res.redirect('/admin/products')});
-app.get('/admin/categories',admin,(req,res)=>res.render('admin/categories',{title:'دسته‌ها و خودروها',categories:cats(),brands:db.prepare('SELECT * FROM car_brands').all(),models:db.prepare('SELECT m.*,b.name brand_name FROM car_models m JOIN car_brands b ON b.id=m.brand_id').all()}));app.post('/admin/categories',admin,(req,res)=>{const n=String(req.body.name||'').trim().slice(0,80);if(n.length>1)try{db.prepare('INSERT INTO categories(name,slug) VALUES(?,?)').run(n,slug(n))}catch{}res.redirect('/admin/categories')});app.post('/admin/categories/:id/delete',admin,(req,res)=>{db.prepare('DELETE FROM categories WHERE id=?').run(num(req.params.id));res.redirect('/admin/categories')});app.post('/admin/car-brands',admin,(req,res)=>{const n=String(req.body.name||'').trim().slice(0,80);if(n)try{db.prepare('INSERT INTO car_brands(name) VALUES(?)').run(n)}catch{}res.redirect('/admin/categories')});app.post('/admin/car-brands/:id/delete',admin,(req,res)=>{db.prepare('DELETE FROM car_brands WHERE id=?').run(num(req.params.id));res.redirect('/admin/categories')});app.post('/admin/car-models',admin,(req,res)=>{const n=String(req.body.name||'').trim().slice(0,80);if(n)try{db.prepare('INSERT INTO car_models(brand_id,name) VALUES(?,?)').run(num(req.body.brand_id),n)}catch{}res.redirect('/admin/categories')});
-app.get('/admin/orders',admin,(req,res)=>res.render('admin/orders',{title:'سفارش‌ها',orders:db.prepare('SELECT * FROM orders ORDER BY id DESC').all()}));app.get('/admin/orders/:id',admin,(req,res)=>{const order=db.prepare('SELECT * FROM orders WHERE id=?').get(num(req.params.id));if(!order)return res.redirect('/admin/orders');res.render('admin/order-detail',{title:'جزئیات سفارش',order,items:db.prepare('SELECT * FROM order_items WHERE order_id=?').all(order.id)})});app.post('/admin/orders/:id/status',admin,(req,res)=>{if(['pending','processing','shipped','delivered','cancelled'].includes(req.body.status))db.prepare('UPDATE orders SET status=? WHERE id=?').run(req.body.status,num(req.params.id));res.redirect('/admin/orders/'+num(req.params.id))});app.get('/admin/users',admin,(req,res)=>res.render('admin/users',{title:'مشتریان',users:db.prepare("SELECT * FROM users WHERE role='customer' ORDER BY id DESC").all()}));app.get('/admin/settings',admin,(req,res)=>res.render('admin/settings',{title:'تنظیمات',settings:{store_name:setting('store_name')||'',store_phone:setting('store_phone')||'',store_address:setting('store_address')||'',shipping_cost:setting('shipping_cost')||'85000'}}));app.post('/admin/settings',admin,(req,res)=>{for(const k of ['store_name','store_phone','store_address','shipping_cost'])db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(k,String(req.body[k]||'').slice(0,300));res.redirect('/admin/settings')});
-app.use((req,res)=>res.status(404).render('error',{title:'صفحه پیدا نشد',message:'صفحه موردنظر وجود ندارد.'}));app.use((err,req,res,next)=>{console.error(err);if(res.headersSent)return next(err);res.status(500).render('error',{title:'خطای سرور',message:'مشکلی پیش آمده؛ دوباره تلاش کنید.'})});app.listen(PORT,()=>console.log('Store running at http://localhost:'+PORT));
+/**
+ * app.js — سرور فروشگاه اینترنتی قطعات یدکی خودرو «یدک‌یار»
+ * Node.js + Express + EJS + SQLite (node:sqlite) — بدون کامپایل و بدون مرحله build
+ */
+require('./config/env').ensureEnv();
+require('dotenv').config();
+
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const crypto = require('crypto');
+const express = require('express');
+const session = require('express-session');
+const helmet = require('helmet');
+const methodOverride = require('method-override');
+
+const SQLiteSessionStore = require('./models/session-store');
+const { all, setting } = require('./models/db');
+const { readCart } = require('./lib/cart');
+const fmt = require('./lib/format');
+
+const app = express();
+const HOST = process.env.HOST || '0.0.0.0';
+const BASE_PORT = parseInt(process.env.PORT, 10) || 3000;
+
+// پوشه‌های موردنیاز
+fs.mkdirSync(path.join(__dirname, 'uploads'), { recursive: true });
+fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
+
+/* ---------------- امنیت پایه ---------------- */
+app.set('trust proxy', 1); // پشت تونل/پراکسی HTTPS هم کوکی امن بسازد
+app.disable('x-powered-by');
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      fontSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"]
+    }
+  }
+}));
+
+/* ---------------- قالب‌بندی و ورودی‌ها ---------------- */
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d', index: 'index.html' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+app.use(express.json({ limit: '100kb' }));
+app.use(methodOverride('_method'));
+
+/* ---------------- نشست (SQLite) ---------------- */
+const store = new SQLiteSessionStore();
+app.use(session({
+  store,
+  secret: process.env.SESSION_SECRET || 'dev-only-secret',
+  resave: false,
+  saveUninitialized: false,
+  name: 'yadakyar.sid',
+  rolling: false,
+  cookie: { httpOnly: true, sameSite: 'lax', secure: 'auto', maxAge: 7 * 24 * 60 * 60 * 1000 }
+}));
+setInterval(() => store.prune(), 60 * 60 * 1000).unref();
+
+/* ---------------- توکن CSRF ---------------- */
+app.use((req, res, next) => {
+  if (!req.session.csrf) req.session.csrf = crypto.randomBytes(24).toString('hex');
+  res.locals.csrfToken = req.session.csrf;
+  next();
+});
+
+/* ---------------- متغیرهای مشترک قالب‌ها ---------------- */
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  res.locals.storeName = setting('store_name') || process.env.STORE_NAME || 'یدک‌یار';
+  res.locals.storePhone = setting('store_phone') || process.env.STORE_PHONE || '021-55500000';
+  res.locals.storeAddress = setting('store_address') || process.env.STORE_ADDRESS || 'تهران';
+  res.locals.money = fmt.money;
+  res.locals.fa = fmt.fa;
+  res.locals.dateFa = fmt.dateFa;
+  res.locals.dateTimeFa = fmt.dateTimeFa;
+  res.locals.finalPrice = fmt.finalPrice;
+  res.locals.discountPercent = fmt.discountPercent;
+  res.locals.navCategories = all('SELECT c.id, c.name, c.slug, COUNT(p.id) AS n FROM categories c LEFT JOIN products p ON p.category_id = c.id AND p.active = 1 GROUP BY c.id ORDER BY c.name');
+  res.locals.cart = readCart(req);
+  res.locals.cartCount = res.locals.cart.count;
+  res.locals.flash = req.session.flash || null;
+  delete req.session.flash;
+  res.locals.path = req.path;
+  res.locals.query = req.query;
+  res.locals.year = new Date().getFullYear();
+  next();
+});
+
+/* ---------------- پارس درخواست‌های چندبخشی (آپلود تصویر) ---------------- */
+const { upload } = require('./controllers/admin');
+app.use((req, res, next) => {
+  const ct = String(req.headers['content-type'] || '');
+  if (!ct.startsWith('multipart/form-data')) return next();
+  upload.any()(req, res, (err) => {
+    if (err) {
+      req.session.flash = { type: 'err', text: err.message || 'خطا در آپلود فایل. فقط تصویر تا ۲ مگابایت مجاز است.' };
+      return res.redirect(req.get('referer') || '/admin/products');
+    }
+    next();
+  });
+});
+
+/* ---------------- بررسی توکن CSRF ---------------- */
+app.use((req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    const token = (req.body && req.body._csrf) || req.get('x-csrf-token');
+    if (!token || token !== req.session.csrf) {
+      return res.status(403).render('error', {
+        code: 403,
+        title: 'درخواست نامعتبر',
+        message: 'توکن امنیتی معتبر نبود. صفحه را تازه‌سازی کنید و دوباره تلاش کنید.'
+      });
+    }
+  }
+  next();
+});
+
+/* ---------------- مسیرها ---------------- */
+app.use('/', require('./routes/shop'));
+app.use('/', require('./routes/auth'));
+app.use('/cart', require('./routes/cart'));
+app.use('/', require('./routes/checkout'));
+app.use('/admin', require('./routes/admin'));
+
+/* ---------------- ۴۰۴ و ۵۰۰ ---------------- */
+app.use((req, res) => {
+  res.status(404).render('error', { code: 404, title: 'صفحه پیدا نشد', message: 'صفحه‌ای که دنبال آن بودید وجود ندارد یا جابه‌جا شده است.' });
+});
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  console.error('[error]', err);
+  if (res.headersSent) return next(err);
+  res.status(500).render('error', {
+    code: 500,
+    title: 'خطای سرور',
+    message: 'متأفانه خطایی رخ داد. چند لحظه دیگر دوباره تلاش کنید.'
+  });
+});
+
+/* ---------------- آدرس‌های شبکه و اجرای سرور ---------------- */
+function lanAddress() {
+  const ifs = os.networkInterfaces();
+  for (const name of Object.keys(ifs)) {
+    for (const i of ifs[name] || []) {
+      if (i.family === 'IPv4' && !i.internal) return i.address;
+    }
+  }
+  return null;
+}
+
+function start(port, attempt = 0) {
+  const server = app.listen(port, HOST, () => {
+    const lan = lanAddress();
+    const actual = server.address().port;
+    console.log('');
+    console.log('  ✔ فروشگاه «' + (setting('store_name') || process.env.STORE_NAME || 'یدک‌یار') + '» راه‌اندازی شد.');
+    console.log('  ─────────────────────────────────────────────');
+    console.log('   Local   :  http://localhost:' + actual);
+    if (lan) console.log('   Network :  http://' + lan + ':' + actual + '   (برای موبایل در همان شبکه وای‌فای)');
+    console.log('   Admin   :  http://localhost:' + actual + '/admin');
+    console.log('  ─────────────────────────────────────────────');
+    console.log('  Site is running. این پنجره را نبندید تا سایت روشن بماند / Close this window to stop.');
+    console.log('SITE_URL=http://localhost:' + actual);
+  });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && attempt < 9) {
+      console.log('[port] پورت ' + port + ' اشغال است، پورت ' + (port + 1) + ' امتحان می‌شود... / Port ' + port + ' is busy, trying ' + (port + 1) + '.');
+      start(port + 1, attempt + 1);
+    } else if (err.code === 'EADDRINUSE') {
+      console.error('[port] هیچ پورتی از ' + port + ' تا ' + (port + 9) + ' در دسترس نیست.');
+      console.error('[Error] No free port found. Change PORT in .env and try again.');
+      process.exit(1);
+    } else {
+      console.error(err);
+      process.exit(1);
+    }
+  });
+  return server;
+}
+
+start(BASE_PORT);
+
+module.exports = app;

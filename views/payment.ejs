@@ -1,0 +1,30 @@
+<%- include('partials/head') %>
+
+<div class="auth-wrap" style="max-width:520px">
+  <div class="alert alert-info">این یک <strong>درگاه پرداخت نمایشی</strong> است؛ هیچ پولی جابه‌جا نمی‌شود و اطلاعات کارتی دریافت نمی‌شود.</div>
+
+  <div class="panel">
+    <h3 style="border:0;padding:0">پرداخت اینترنتی (شبیه‌سازی‌شده)</h3>
+    <div class="line" style="display:flex;justify-content:space-between;padding:6px 0"><span>کد سفارش</span><strong dir="ltr"><%= order.code %></strong></div>
+    <div class="line" style="display:flex;justify-content:space-between;padding:6px 0"><span>پرداخت‌کننده</span><strong><%= order.receiver %></strong></div>
+    <div class="line" style="display:flex;justify-content:space-between;padding:6px 0">
+      <span>مبلغ قابل پرداخت</span>
+      <strong class="red" style="font-size:18px"><%= money(order.total) %> تومان</strong>
+    </div>
+
+    <div class="field" style="margin-top:14px">
+      <label>شماره کارت (نمایشی)</label>
+      <input type="text" dir="ltr" value="6037-9912-3456-7890" readonly style="background:#f7f7f7">
+    </div>
+
+    <form action="/pay/<%= order.code %>" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-block" name="action" value="success" type="submit" style="min-height:46px">پرداخت موفق (شبیه‌سازی)</button>
+      <button class="btn btn-ghost btn-block" name="action" value="cancel" type="submit" style="margin-top:8px">انصراف از پرداخت</button>
+    </form>
+  </div>
+
+  <p class="center muted" style="font-size:12.5px">در نسخه واقعی، این مرحله به درگاه بانکی متصل می‌شود.</p>
+</div>
+
+<%- include('partials/foot') %>

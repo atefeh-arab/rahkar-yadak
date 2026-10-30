@@ -1,1 +1,66 @@
-<%- include('partials/head',{title,categories:[]}) %><h1 class="pagetitle">سبد خرید</h1><% if(!items.length){ %><div class="empty"><h2>سبد خرید شما خالی است</h2><a class="btn" href="/products">رفتن به فروشگاه</a></div><% }else{ %><div class="cartlayout"><div class="panel"><% items.forEach(i=>{ %><div class="cartitem"><img src="<%= i.image %>" alt=""><div class="grow"><a href="/product/<%= i.id %>"><b><%= i.name %></b></a><small><%= i.brand %> · <%= i.part_number %></small><b><%= money(i.lineTotal) %> تومان</b><form class="inline" method="post" action="/cart/update"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="product_id" value="<%= i.id %>"><input type="number" name="qty" min="0" max="<%= i.stock %>" value="<%= i.qty %>"><button class="btn small">به‌روزرسانی</button></form><form method="post" action="/cart/remove"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="product_id" value="<%= i.id %>"><button class="textbtn">حذف</button></form></div></div><% }) %></div><aside class="panel summary"><h2>خلاصه سفارش</h2><div><span>جمع کالاها</span><b><%= money(subtotal) %> تومان</b></div><div><span>هزینه ارسال</span><span>در مرحله بعد</span></div><hr><a class="btn wide" href="/checkout">ادامه و ثبت سفارش</a><a class="reset" href="/products">ادامه خرید</a></aside></div><% } %><%- include('partials/foot') %>
+<%- include('partials/head') %>
+
+<h1>سبد خرید شما</h1>
+
+<% if (!cart.items.length) { %>
+  <div class="empty">
+    <h3>سبد خرید خالی است</h3>
+    <p class="muted">هنوز کالایی به سبد اضافه نکرده‌اید.</p>
+    <a class="btn" href="/products">شروع خرید</a>
+  </div>
+<% } else { %>
+<div class="two-col">
+  <div class="box panel" style="padding:0;overflow:auto">
+    <table class="cart-table">
+      <thead>
+        <tr><th>کالا</th><th>قیمت واحد</th><th>تعداد</th><th>جمع</th><th></th></tr>
+      </thead>
+      <tbody>
+        <% cart.items.forEach(function (it) { %>
+        <tr>
+          <td>
+            <div class="cart-item">
+              <a href="/product/<%= it.slug %>"><img src="<%= it.image || '/images/part.svg' %>" alt=""></a>
+              <a href="/product/<%= it.slug %>"><strong><%= it.name %></strong></a>
+            </div>
+          </td>
+          <td><%= money(it.unit) %> تومان</td>
+          <td>
+            <form action="/cart/update" method="post" style="display:flex;gap:6px;align-items:center">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="product_id" value="<%= it.id %>">
+              <div class="qty">
+                <button type="button" data-qty="down">−</button>
+                <input type="number" name="qty" value="<%= it.qty %>" min="0" max="99" data-autosubmit="1">
+                <button type="button" data-qty="up">+</button>
+              </div>
+            </form>
+          </td>
+          <td><strong><%= money(it.line) %></strong> تومان</td>
+          <td>
+            <form action="/cart/<%= it.id %>/remove" method="post">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-sm btn-danger" type="submit">حذف</button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <aside class="summary">
+    <h3>خلاصه سفارش</h3>
+    <div class="line"><span>قیمت کالاها (<%= fa(cartCount) %> عدد)</span><span><%= money(cart.subtotal) %> تومان</span></div>
+    <div class="line"><span>هزینه ارسال</span><span><%= totals.ship === 0 ? 'رایگان' : money(totals.ship) + ' تومان' %></span></div>
+    <% if (totals.ship > 0) { %>
+      <div class="line muted" style="font-size:12.5px"><span>ارسال رایگان از <%= money(totals.freeOver) %> تومان</span><span></span></div>
+    <% } %>
+    <div class="line total"><span>مبلغ قابل پرداخت</span><span><%= money(totals.total) %> تومان</span></div>
+    <a class="btn btn-block" href="/checkout" style="margin-top:12px">تکمیل خرید</a>
+    <a class="btn btn-ghost btn-block" href="/products" style="margin-top:8px">ادامه خرید</a>
+  </aside>
+</div>
+<% } %>
+
+<%- include('partials/foot') %>

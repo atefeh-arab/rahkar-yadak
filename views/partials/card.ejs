@@ -1,1 +1,28 @@
-<article class="card"><a class="thumb" href="/product/<%= p.id %>"><img loading="lazy" src="<%= p.image||'/images/part.svg' %>" alt="<%= p.name %>"><% if(p.discount){ %><span class="badge"><%= money(p.discount) %>٪</span><% } %></a><div class="cardbody"><small class="muted"><%= p.category_name||'قطعات خودرو' %></small><a class="ptitle" href="/product/<%= p.id %>"><%= p.name %></a><small class="muted"><%= p.brand||'متفرقه' %> · <%= p.part_number||'—' %></small><div class="price"><div><% if(p.discount){ %><del><%= money(p.price) %></del><% } %><b><%= money(Math.round(p.price*(100-p.discount)/100)) %></b><small>تومان</small></div><span class="<%= p.stock?'available':'unavailable' %>"><%= p.stock?'موجود':'ناموجود' %></span></div><form method="post" action="/cart/add"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="product_id" value="<%= p.id %>"><button class="add" <%= p.stock?'':'disabled' %>>افزودن به سبد</button></form></div></article>
+<article class="card">
+  <a class="thumb" href="/product/<%= p.slug %>">
+    <% if (p.off > 0) { %><span class="badge"><%= fa(p.off) + '٪ تخفیف' %></span><% } %>
+    <span class="badge-stock <%= p.stock > 0 ? '' : 'badge-out' %>">
+      <%= p.stock > 0 ? 'موجود در انبار' : 'ناموجود' %>
+    </span>
+    <img src="<%= p.image || '/images/part.svg' %>" alt="<%= p.name %>" loading="lazy">
+  </a>
+  <div class="body">
+    <a class="name" href="/product/<%= p.slug %>"><%= p.name %></a>
+    <div class="meta">
+      <% if (p.part_brand) { %><span><%= p.part_brand %></span> &bull; <% } %>
+      <% if (p.part_number) { %><span>کد: <%= p.part_number %></span><% } %>
+    </div>
+    <div class="price">
+      <%= p.price_label %> تومان
+      <% if (p.off > 0) { %><span class="old"><%= money(p.price) %></span><% } %>
+    </div>
+    <form action="/cart/add-form" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="product_id" value="<%= p.id %>">
+      <input type="hidden" name="return" value="<%= path + (Object.keys(query || {}).length ? '?' + Object.entries(query).map(function(e){return e[0]+'='+encodeURIComponent(e[1])}).join('&') : '') %>">
+      <button class="btn btn-sm btn-block" type="submit" <%= p.stock > 0 ? '' : 'disabled' %>>
+        <%= p.stock > 0 ? 'افزودن به سبد خرید' : 'ناموجود' %>
+      </button>
+    </form>
+  </div>
+</article>

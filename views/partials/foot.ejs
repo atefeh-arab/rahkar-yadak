@@ -1,1 +1,52 @@
-</main><footer><div class="container foot"><div><a class="brand" href="/"><img src="/images/logo.svg" alt=""><b><%= storeName %></b></a><p>مرجع آنلاین تهیه قطعات یدکی و مصرفی خودرو.</p></div><div><b>راهنمای خرید</b><a href="/faq">پرسش‌های متداول</a><a href="/terms">شرایط استفاده</a><a href="/returns">رویه بازگشت کالا</a></div><div><b>درباره فروشگاه</b><a href="/about">درباره ما</a><a href="/contact">تماس با ما</a><a href="/track">پیگیری سفارش</a></div><div><b>ارتباط با ما</b><p><%= storePhone %></p><p><%= storeAddress %></p></div></div><div class="copyright">تمام حقوق برای <%= storeName %> محفوظ است.</div></footer></body></html>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div>
+      <h4><%= storeName %></h4>
+      <p style="margin:0 0 10px">فروشگاه اینترنتی قطعات یدکی خودرو؛ پیدا کردن قطعه مناسب مدل و سال خودروی شما در چند ثانیه.</p>
+      <ul>
+        <li>تلفن: <%= storePhone %></li>
+        <li>نشانی: <%= storeAddress %></li>
+        <li>پشتیبانی: شنبه تا چهارشنبه، ۹ تا ۱۸</li>
+      </ul>
+    </div>
+    <div>
+      <h4>دسترسی سریع</h4>
+      <ul>
+        <li><a href="/products">همه کالاها</a></li>
+        <li><a href="/products?sort=bestselling">پرفروش‌ترین‌ها</a></li>
+        <li><a href="/products?sort=cheapest">ارزان‌ترین‌ها</a></li>
+        <li><a href="/products?sort=newest">تازه‌رسیده‌ها</a></li>
+        <li><a href="/track">پیگیری سفارش</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>خدمات مشتری</h4>
+      <ul>
+        <li><a href="/page/about">درباره ما</a></li>
+        <li><a href="/page/contact">تماس با ما</a></li>
+        <li><a href="/page/faq">پرسش‌های متداول</a></li>
+        <li><a href="/page/returns">شرایط بازگشت کالا</a></li>
+        <li><a href="/page/terms">شرایط استفاده</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>حساب کاربری</h4>
+      <ul>
+        <li><a href="/login">ورود و ثبت‌نام</a></li>
+        <li><a href="/account">پروفایل و نشانی‌ها</a></li>
+        <li><a href="/orders">سفارش‌های من</a></li>
+        <li><a href="/cart">سبد خرید</a></li>
+        <li><a href="/admin">پنل مدیریت</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    تمامی حقوق محفوظ است &copy; <%= fa(year) %> <%= storeName %> — ساخته‌شده با Node.js، Express و SQLite
+  </div>
+</footer>
+
+<script src="/js/store.js"></script>
+</body>
+</html>

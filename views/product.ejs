@@ -1,1 +1,100 @@
-<%- include('partials/head',{title,categories:[]}) %><div class="crumb"><a href="/">خانه</a> / <a href="/products">محصولات</a> / <%= p.name %></div><div class="detail"><div class="detailimg"><img src="<%= p.image %>" alt="<%= p.name %>"></div><div><small class="muted"><%= p.category_name||'قطعات خودرو' %></small><h1><%= p.name %></h1><p class="muted">برند: <b><%= p.brand||'متفرقه' %></b> · کد OEM: <b><%= p.part_number||'—' %></b></p><div class="bigprice"><% if(p.discount){ %><del><%= money(p.price) %> تومان</del><% } %><b><%= money(Math.round(p.price*(100-p.discount)/100)) %></b> تومان</div><p class="<%= p.stock?'available':'unavailable' %>"><%= p.stock?'موجود در انبار ('+money(p.stock)+' عدد)':'ناموجود' %></p><p><%= p.description %></p><form method="post" action="/cart/add" class="addform"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="product_id" value="<%= p.id %>"><label>تعداد <input type="number" name="qty" min="1" max="<%= Math.max(1,p.stock) %>" value="1"></label><button class="btn" <%= p.stock?'':'disabled' %>>افزودن به سبد خرید</button></form><div class="compat"><h3>خودروهای سازگار</h3><p><%= p.compatible||'کد OEM را با قطعه فعلی تطبیق دهید.' %></p><p>برند: <%= p.car_brand||'—' %> · مدل: <%= p.car_model||'—' %> · سال: <%= p.year_range||'—' %></p></div></div></div><section class="section"><h2>مشخصات فنی</h2><table><tr><th>برند قطعه</th><td><%= p.brand %></td></tr><tr><th>کد OEM</th><td><%= p.part_number %></td></tr><% Object.entries(specs).forEach(([k,v])=>{ %><tr><th><%= k %></th><td><%= v %></td></tr><% }) %></table><h2>توضیحات</h2><p><%= p.description %></p></section><% if(related.length){ %><section class="section"><h2>محصولات مرتبط</h2><div class="grid"><% related.forEach(p=>{ %><%- include('partials/card',{p}) %><% }) %></div></section><% } %><%- include('partials/foot') %>
+<%- include('partials/head') %>
+
+<div class="product">
+  <div class="gallery">
+    <div class="main">
+      <img id="main-image" src="<%= images[0] || '/images/part.svg' %>" alt="<%= product.name %>">
+    </div>
+    <% if (images.length > 1) { %>
+      <div class="thumbs">
+        <% images.forEach(function (src, i) { %>
+          <button type="button" class="<%= i === 0 ? 'active' : '' %>" data-gallery="<%= src %>">
+            <img src="<%= src %>" alt="تصویر <%= fa(i + 1) %>">
+          </button>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <div>
+    <h1 class="p-title"><%= product.name %></h1>
+    <div class="p-meta">
+      <% if (product.category_name) { %><a href="/products?cat=<%= product.category_slug %>" class="red"><%= product.category_name %></a> &bull; <% } %>
+      <% if (product.part_brand) { %>برند قطعه: <strong><%= product.part_brand %></strong> &bull; <% } %>
+      <% if (product.part_number) { %>کد فنی (OEM): <strong dir="ltr"><%= product.part_number %></strong><% } %>
+    </div>
+
+    <div class="price-box">
+      <% if (product.off > 0) { %>
+        <div class="now"><%= money(product.final) %> تومان <span class="off"><%= fa(product.off) + '٪ تخفیف' %></span>
+          <span class="was"><%= money(product.price) %></span></div>
+      <% } else { %>
+        <div class="now"><%= money(product.final) %> تومان</div>
+      <% } %>
+      <div class="stock <%= product.stock > 0 ? 'ok' : 'no' %>">
+        <%= product.stock > 0 ? '✓ موجود در انبار (' + fa(product.stock) + ' عدد)' : '✗ ناموجود' %>
+      </div>
+    </div>
+
+    <form action="/cart/add-form" method="post" id="add-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="product_id" value="<%= product.id %>">
+      <input type="hidden" name="return" value="/product/<%= product.slug %>">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="qty">
+          <button type="button" data-qty="down">−</button>
+          <input type="number" name="qty" value="1" min="1" max="<%= Math.max(1, product.stock) %>">
+          <button type="button" data-qty="up">+</button>
+        </div>
+        <button class="btn" type="submit" style="flex:1;min-width:180px" <%= product.stock > 0 ? '' : 'disabled' %>>
+          <%= product.stock > 0 ? 'افزودن به سبد خرید 🛒' : 'ناموجود' %>
+        </button>
+      </div>
+    </form>
+
+    <% if (vehicles.length) { %>
+      <div class="panel" style="margin-top:16px">
+        <h3>خودروهای سازگار</h3>
+        <div class="vehicle-tags">
+          <% vehicles.forEach(function (v) { %>
+            <span class="tag">
+              <%= (v.brand || '') + (v.model ? ' ' + v.model : '') %>
+              <% if (v.year_from || v.year_to) { %>
+                (<%= fa(v.year_from || '') %> تا <%= fa(v.year_to || '') %>)
+              <% } %>
+            </span>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (Object.keys(specs).length) { %>
+      <div class="panel" style="margin-top:16px">
+        <h3>مشخصات فنی</h3>
+        <table class="spec">
+          <% Object.keys(specs).forEach(function (k) { %>
+            <tr><th><%= k %></th><td><%= specs[k] %></td></tr>
+          <% }) %>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<% if (product.description) { %>
+<section class="panel" style="margin-top:16px">
+  <h3>توضیحات کالا</h3>
+  <p style="margin:0;white-space:pre-line"><%= product.description %></p>
+</section>
+<% } %>
+
+<% if (related.length) { %>
+<section class="section">
+  <div class="section-head"><h2>کالاهای مرتبط</h2></div>
+  <div class="grid">
+    <% related.forEach(function (p) { %><%- include('partials/card', {p: p}) %><% }) %>
+  </div>
+</section>
+<% } %>
+
+<%- include('partials/foot') %>

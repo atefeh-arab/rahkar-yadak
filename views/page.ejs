@@ -1,0 +1,43 @@
+<%- include('partials/head') %>
+
+<div class="page-box">
+  <h1><%= page.title %></h1>
+
+  <% if (page.body) { %>
+    <% page.body.forEach(function (p) { %><p><%= p %></p><% }) %>
+  <% } %>
+
+  <% if (page.points) { %>
+    <div class="brands-row" style="margin-top:14px">
+      <% page.points.forEach(function (t) { %>
+        <div style="padding:14px;text-align:center;background:var(--red-soft);border-color:#ffcdd2"><strong><%= t %></strong></div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <% if (page.contact) { %>
+    <table class="spec" style="margin-top:14px">
+      <tr><th>تلفن</th><td dir="ltr"><%= page.contact.phone %></td></tr>
+      <tr><th>موبایل</th><td dir="ltr"><%= page.contact.mobile %></td></tr>
+      <tr><th>ایمیل</th><td dir="ltr"><%= page.contact.email %></td></tr>
+      <tr><th>نشانی</th><td><%= page.contact.address %></td></tr>
+      <tr><th>ساعات پاسخگویی</th><td><%= page.contact.hours %></td></tr>
+    </table>
+    <form action="mailto:<%= page.contact.email %>" method="get" style="margin-top:16px">
+      <button class="btn" type="submit">ارسال پیام با ایمیل</button>
+    </form>
+  <% } %>
+
+  <% if (page.items) { %>
+    <div style="margin-top:10px">
+      <% page.items.forEach(function (qa) { %>
+        <div class="faq-item">
+          <div class="faq-q">◦ <%= qa[0] %></div>
+          <div class="faq-a"><%= qa[1] %></div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/foot') %>

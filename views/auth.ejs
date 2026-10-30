@@ -1,1 +1,52 @@
-<%- include('partials/head',{title,categories:[]}) %><div class="auth"><h1><%= mode==='register'?'ساخت حساب کاربری':'ورود به حساب کاربری' %></h1><form method="post" action="<%= mode==='register'?'/register':'/login' %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if(mode==='register'){ %><label>نام و نام خانوادگی<input required name="name" minlength="2"></label><label>شماره موبایل<input required name="phone" minlength="7"></label><% } %><label>ایمیل<input required type="email" name="email"></label><label>رمز عبور<input required type="password" name="password" minlength="<%= mode==='register'?8:1 %>"></label><button class="btn wide"><%= mode==='register'?'ثبت‌نام':'ورود' %></button></form><p><a href="<%= mode==='register'?'/login':'/register' %>"><%= mode==='register'?'ورود به حساب':'ساخت حساب جدید' %></a></p></div><%- include('partials/foot') %>
+<%- include('partials/head') %>
+
+<div class="auth-wrap">
+  <div class="auth-tabs">
+    <a href="/login" class="<%= mode === 'login' ? 'active' : '' %>">ورود</a>
+    <a href="/register" class="<%= mode === 'register' ? 'active' : '' %>">ثبت‌نام</a>
+  </div>
+
+  <% if (error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+  <% if (mode === 'login') { %>
+  <form action="/login" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label>ایمیل</label>
+      <input type="email" name="email" value="<%= old.email || '' %>" required dir="ltr" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label>رمز عبور</label>
+      <input type="password" name="password" required dir="ltr">
+    </div>
+    <button class="btn btn-block" type="submit">ورود</button>
+    <p class="center muted" style="margin-top:12px">هنوز حساب ندارید؟ <a class="red" href="/register"><strong>ثبت‌نام کنید</strong></a></p>
+  </form>
+
+  <% } else { %>
+  <form action="/register" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label>نام و نام خانوادگی</label>
+      <input type="text" name="name" value="<%= old.name || '' %>" required minlength="3">
+    </div>
+    <div class="field">
+      <label>ایمیل</label>
+      <input type="email" name="email" value="<%= old.email || '' %>" required dir="ltr">
+    </div>
+    <div class="field">
+      <label>شماره موبایل</label>
+      <input type="tel" name="phone" value="<%= old.phone || '' %>" required dir="ltr" placeholder="09121234567" pattern="09[0-9]{9}">
+    </div>
+    <div class="field">
+      <label>رمز عبور</label>
+      <input type="password" name="password" required minlength="8" dir="ltr">
+      <div class="hint">حداقل ۸ کاراکتر</div>
+    </div>
+    <button class="btn btn-block" type="submit">ساخت حساب کاربری</button>
+    <p class="center muted" style="margin-top:12px">قبلاً ثبت‌نام کرده‌اید؟ <a class="red" href="/login"><strong>وارد شوید</strong></a></p>
+  </form>
+  <% } %>
+</div>
+
+<%- include('partials/foot') %>

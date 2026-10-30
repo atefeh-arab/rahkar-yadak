@@ -1,0 +1,82 @@
+<%- include('_top') %>
+
+<div class="admin-title"><h1>برندها و مدل‌های خودرو</h1></div>
+
+<div class="box">
+  <h3>افزودن برند خودرو</h3>
+  <form action="/admin/brands" method="post" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input class="input" style="max-width:320px" type="text" name="name" required minlength="2" placeholder="مثلاً: پژو">
+    <button class="btn" type="submit">افزودن برند</button>
+  </form>
+</div>
+
+<div class="box">
+  <h3>برندها</h3>
+  <% if (!brands.length) { %><p class="muted">برندی ثبت نشده است.</p><% } else { %>
+  <table class="table">
+    <thead><tr><th>نام برند</th><th>مدل‌ها</th><th>تعداد مدل</th><th></th></tr></thead>
+    <tbody>
+      <% brands.forEach(function (b) { %>
+        <tr>
+          <td><strong><%= b.name %></strong></td>
+          <td>
+            <% var ms = models.filter(function (m) { return m.brand_id === b.id; }); %>
+            <%= ms.map(function (m) { return m.name; }).join('، ') || '—' %>
+          </td>
+          <td><%= fa(b.n) %></td>
+          <td>
+            <div class="acts">
+              <a class="btn btn-sm btn-outline" href="/products?brand=<%= b.id %>" target="_blank" rel="noopener">مشاهده در سایت</a>
+              <form action="/admin/brands/<%= b.id %>/delete" method="post" data-confirm="برند «<%= b.name %>» و همه مدل‌های آن حذف شود؟">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-danger" type="submit">حذف</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+<div class="box">
+  <h3>افزودن مدل خودرو</h3>
+  <form action="/admin/brands/models" method="post" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <select name="brand_id" required style="padding:9px 12px;border:1px solid var(--line);border-radius:10px">
+      <option value="">— انتخاب برند —</option>
+      <% brands.forEach(function (b) { %><option value="<%= b.id %>"><%= b.name %></option><% }) %>
+    </select>
+    <input class="input" style="max-width:260px" type="text" name="name" required placeholder="مثلاً: 206">
+    <button class="btn" type="submit">افزودن مدل</button>
+  </form>
+</div>
+
+<div class="box">
+  <h3>مدل‌ها</h3>
+  <% if (!models.length) { %><p class="muted">مدلی ثبت نشده است.</p><% } else { %>
+  <table class="table">
+    <thead><tr><th>برند</th><th>مدل</th><th></th></tr></thead>
+    <tbody>
+      <% models.forEach(function (m) { %>
+        <tr>
+          <td><%= m.brand_name %></td>
+          <td><strong><%= m.name %></strong></td>
+          <td>
+            <div class="acts">
+              <form action="/admin/brands/models/<%= m.id %>/delete" method="post" data-confirm="مدل «<%= m.name %>» حذف شود؟">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button class="btn btn-sm btn-danger" type="submit">حذف</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+<%- include('_bottom') %>

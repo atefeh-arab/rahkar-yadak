@@ -1,1 +1,88 @@
-<%- include('partials/head',{title,categories}) %><section class="hero"><div><small class="red">انتخاب درست، رانندگی مطمئن</small><h1>قطعه مناسب خودروی شما،<br>با خیال آسوده</h1><p>جست‌وجوی سریع قطعات بر اساس نام، کد فنی و مدل خودرو</p><a class="btn" href="/products">مشاهده همه قطعات</a></div><img src="/images/part.svg" alt="قطعات خودرو"></section><div class="trust"><span>✓ ضمانت اصالت کالا</span><span>↗ ارسال به سراسر کشور</span><span>◷ پشتیبانی پاسخ‌گو</span><span>▣ پرداخت در محل</span></div><section class="section"><div class="sectionhead"><h2>خرید بر اساس دسته‌بندی</h2><a href="/products">همه دسته‌ها ←</a></div><div class="catgrid"><% categories.forEach(c=>{ %><a href="/category/<%= c.slug %>"><b>⚙</b><strong><%= c.name %></strong><small><%= money(c.product_count) %> کالا</small></a><% }) %></div></section><% [['پرفروش‌ترین‌ها',best],['تازه‌رسیده‌ها',newest],['فرصت‌های خرید',discounted]].forEach((s,i)=>{ %><section class="section"><div class="sectionhead"><h2><%= s[0] %></h2><a href="/products<%= i===0?'?sort=bestselling':i===1?'?sort=newest':'?sort=cheapest' %>">مشاهده همه ←</a></div><div class="grid"><% s[1].forEach(p=>{ %><%- include('partials/card',{p}) %><% }) %></div></section><% }) %><div class="brands"><b>برندهای خودرویی قابل انتخاب</b><span>پژو</span><span>سمند</span><span>پراید</span><span>تویوتا</span><span>هیوندای</span><span>کیا</span><span>رنو</span></div><%- include('partials/foot') %>
+<%- include('partials/head') %>
+
+<!-- بنر اصلی (اسلایدر ساده) -->
+<section class="hero">
+  <div class="hero-track">
+    <div class="hero-slide s1">
+      <div class="hero-txt">
+        <h2>قطعه مناسب خودروی شما، با خیال آسوده</h2>
+        <p>بیش از ۴۰ قطعه پرفروش با کد فنی مشخص، ارسال سریع و ضمانت اصالت کالا.</p>
+        <a class="btn" href="/products">مشاهده همه کالاها</a>
+      </div>
+      <img class="hero-img" src="/images/part.svg" alt="">
+    </div>
+    <div class="hero-slide s2">
+      <div class="hero-txt">
+        <h2>فروش ویژه لنت، فیلتر و شمع</h2>
+        <p>تا ۳۰٪ تخفیف روی کالاهای پرمصرف نگهداری خودرو؛ موجودی به‌روز و ارسال در همان روز.</p>
+        <a class="btn" href="/products?sort=discount">مشاهده تخفیف‌دارها</a>
+      </div>
+      <img class="hero-img" src="/images/part.svg" alt="">
+    </div>
+    <div class="hero-slide s3">
+      <div class="hero-txt">
+        <h2>پرداخت در محل در سراسر کشور</h2>
+        <p>برند و مدل خودروی خود را انتخاب کنید تا فقط قطعات سازگار با خودروی شما نمایش داده شود.</p>
+        <a class="btn" href="/products">جست‌وجو بر اساس خودرو</a>
+      </div>
+      <img class="hero-img" src="/images/part.svg" alt="">
+    </div>
+  </div>
+</section>
+
+<!-- دسته‌بندی‌ها -->
+<section class="section">
+  <div class="section-head"><h2>خرید بر اساس دسته‌بندی</h2><a href="/products">همه دسته‌ها ←</a></div>
+  <div class="brands-row">
+    <% navCategories.slice(0, 8).forEach(function (c) { %>
+      <a href="/products?cat=<%= c.slug %>" style="padding:14px;text-align:center">
+        <strong style="display:block"><%= c.name %></strong>
+        <small><%= fa(c.n) %> کالا</small>
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<!-- پرفروش‌ترین‌ها -->
+<% if (best.length) { %>
+<section class="section">
+  <div class="section-head"><h2>پرفروش‌ترین‌ها</h2><a href="/products?sort=bestselling">مشاهده همه ←</a></div>
+  <div class="grid">
+    <% best.forEach(function (p) { %><%- include('partials/card', {p: p}) %><% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- تازه‌رسیده‌ها -->
+<% if (newest.length) { %>
+<section class="section">
+  <div class="section-head"><h2>تازه‌رسیده‌ها</h2><a href="/products?sort=newest">مشاهده همه ←</a></div>
+  <div class="grid">
+    <% newest.forEach(function (p) { %><%- include('partials/card', {p: p}) %><% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- فرصت‌های خرید -->
+<% if (deals.length) { %>
+<section class="section">
+  <div class="section-head"><h2>فرصت‌های خرید (تخفیف‌دار)</h2><a href="/products?sort=discount">مشاهده همه ←</a></div>
+  <div class="grid">
+    <% deals.forEach(function (p) { %><%- include('partials/card', {p: p}) %><% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- برندهای خودرو -->
+<section class="section">
+  <div class="section-head"><h2>جست‌وجو بر اساس برند خودرو</h2></div>
+  <div class="brands-row">
+    <% brands.forEach(function (b) { %>
+      <a href="/products?brand=<%= b.id %>" title="<%= b.name %>">
+        <img src="/images/brands/<%= b.slug %>.svg" alt="<%= b.name %>">
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<%- include('partials/foot') %>

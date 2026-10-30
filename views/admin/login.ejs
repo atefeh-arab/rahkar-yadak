@@ -1,1 +1,43 @@
-<%- include('../partials/head',{title,categories:[]}) %><div class="auth"><h1>ورود مدیر فروشگاه</h1><form method="post" action="/admin/login"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label>نام کاربری یا ایمیل<input required name="username"></label><label>رمز عبور<input required type="password" name="password"></label><button class="btn wide">ورود به پنل</button></form><a href="/">بازگشت به فروشگاه</a></div><%- include('../partials/foot') %>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> | یدک‌یار</title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="login-wrap">
+  <div class="box">
+    <div style="text-align:center;margin-bottom:16px">
+      <img src="/images/logo.svg" alt="یدک‌یار" style="height:44px;margin:0 auto">
+      <h1 style="margin-top:10px;font-size:17px">ورود به پنل مدیریت</h1>
+      <p class="muted" style="font-size:13px;margin:0">این بخش فقط برای مدیر فروشگاه است.</p>
+    </div>
+
+    <% if (error) { %><div class="alert alert-err"><%= error %></div><% } %>
+
+    <form action="/admin/login" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label>نام کاربری</label>
+        <input type="text" name="username" dir="ltr" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label>رمز عبور</label>
+        <input type="password" name="password" dir="ltr" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn-block" type="submit">ورود</button>
+    </form>
+
+    <p class="center muted" style="font-size:12.5px;margin-top:14px">
+      <a href="/">بازگشت به فروشگاه</a>
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

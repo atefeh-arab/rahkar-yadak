@@ -1,1 +1,130 @@
-<%- include('partials/head',{title,categories}) %><div class="crumb"><a href="/">خانه</a> / قطعات خودرو</div><div class="listing"><aside class="filters"><h2>فیلتر محصولات</h2><form action="/products" method="get"><input type="hidden" name="q" value="<%= query.q||'' %>"><label>دسته‌بندی</label><select name="category"><option value="">همه دسته‌ها</option><% categories.forEach(c=>{ %><option value="<%= c.slug %>" <%= query.category===c.slug?'selected':'' %>><%= c.name %></option><% }) %></select><label>برند خودرو</label><select name="car_brand"><option value="">همه برندها</option><% carBrands.forEach(b=>{ %><option <%= query.car_brand===b.name?'selected':'' %>><%= b.name %></option><% }) %></select><label>مدل خودرو</label><input name="car_model" value="<%= query.car_model||'' %>" placeholder="مثلاً ۲۰۶ یا سورن"><label>برند قطعه</label><input name="part_brand" value="<%= query.part_brand||'' %>" placeholder="نام برند"><label>حداقل قیمت (تومان)</label><input type="number" min="0" name="min_price" value="<%= query.min_price||'' %>"><label>حداکثر قیمت (تومان)</label><input type="number" min="0" name="max_price" value="<%= query.max_price||'' %>"><label class="check"><input type="checkbox" name="available" value="1" <%= query.available==='1'?'checked':'' %>> فقط موجودها</label><label>مرتب‌سازی</label><select name="sort"><option value="newest">جدیدترین</option><option value="cheapest" <%= query.sort==='cheapest'?'selected':'' %>>ارزان‌ترین</option><option value="expensive" <%= query.sort==='expensive'?'selected':'' %>>گران‌ترین</option><option value="bestselling" <%= query.sort==='bestselling'?'selected':'' %>>پرفروش‌ترین</option></select><button class="btn wide">اعمال فیلتر</button><a class="reset" href="/products">پاک کردن فیلترها</a></form></aside><section class="results"><div class="sectionhead"><div><h1><%= query.q?'نتایج جست‌وجو: '+query.q:'قطعات خودرو' %></h1><small><%= money(total) %> محصول</small></div></div><% if(!products.length){ %><div class="empty"><h2>محصولی پیدا نشد</h2><p>فیلترها را تغییر دهید یا عبارت دیگری جست‌وجو کنید.</p><a class="btn" href="/products">همه محصولات</a></div><% }else{ %><div class="grid"><% products.forEach(p=>{ %><%- include('partials/card',{p}) %><% }) %></div><% } %><% if(pages>1){ %><div class="pagination"><% for(let i=1;i<=pages;i++){ %><a class="<%= page===i?'active':'' %>" href="?<%= new URLSearchParams({...query,page:i}).toString() %>"><%= money(i) %></a><% } %></div><% } %></section></div><%- include('partials/foot') %>
+<%- include('partials/head') %>
+
+<div class="shop">
+
+  <!-- فیلترها -->
+  <aside class="filters" id="filters">
+    <div class="f-head">
+      <strong>فیلترها</strong>
+      <a href="/products" style="font-size:12px;color:var(--red)">حذف همه</a>
+    </div>
+    <form action="/products" method="get">
+      <% if (q.q) { %><input type="hidden" name="q" value="<%= q.q %>"><% } %>
+      <% if (q.sort) { %><input type="hidden" name="sort" value="<%= q.sort %>"><% } %>
+
+      <div class="f-group">
+        <h4>دسته‌بندی قطعه</h4>
+        <select name="cat" onchange="this.form.submit()">
+          <option value="">همه دسته‌بندی‌ها</option>
+          <% categories.forEach(function (c) { %>
+            <option value="<%= c.slug %>" <%= q.cat === c.slug ? 'selected' : '' %>><%= c.name %> (<%= fa(c.n) %>)</option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="f-group">
+        <h4>برند خودرو</h4>
+        <select name="brand" onchange="this.form.submit()">
+          <option value="">همه برندها</option>
+          <% brands.forEach(function (b) { %>
+            <option value="<%= b.id %>" <%= String(q.brand) === String(b.id) ? 'selected' : '' %>><%= b.name %></option>
+          <% }) %>
+        </select>
+        <select name="model" onchange="this.form.submit()">
+          <option value="">همه مدل‌ها</option>
+          <% models.forEach(function (m) { %>
+            <option value="<%= m.id %>" <%= String(q.model) === String(m.id) ? 'selected' : '' %>><%= (m.brand_name ? m.brand_name + ' — ' : '') + m.name %></option>
+          <% }) %>
+        </select>
+        <select name="year" onchange="this.form.submit()">
+          <option value="">هر سال تولید</option>
+          <% for (var y = 1404; y >= 1380; y--) { %>
+            <option value="<%= y %>" <%= String(q.year) === String(y) ? 'selected' : '' %>><%= fa(y) %></option>
+          <% } %>
+        </select>
+      </div>
+
+      <div class="f-group">
+        <h4>محدوده قیمت (تومان)</h4>
+        <div class="price-range">
+          <input type="number" name="min" placeholder="از" value="<%= q.min || '' %>">
+          <input type="number" name="max" placeholder="تا" value="<%= q.max || '' %>">
+        </div>
+        <label class="check"><input type="checkbox" name="instock" value="1" <%= q.instock === '1' ? 'checked' : '' %>> فقط کالاهای موجود</label>
+      </div>
+
+      <% if (partBrands.length) { %>
+      <div class="f-group">
+        <h4>برند قطعه</h4>
+        <select name="pbrand" onchange="this.form.submit()">
+          <option value="">همه برندها</option>
+          <% partBrands.forEach(function (b) { %>
+            <option value="<%= b.part_brand %>" <%= q.pbrand === b.part_brand ? 'selected' : '' %>><%= b.part_brand %></option>
+          <% }) %>
+        </select>
+      </div>
+      <% } %>
+
+      <div class="f-group">
+        <button class="btn btn-block" type="submit">اعمال فیلتر</button>
+      </div>
+    </form>
+  </aside>
+
+  <!-- نتایج -->
+  <div>
+    <div class="toolbar">
+      <button class="btn btn-ghost btn-sm filter-toggle" id="filter-toggle" type="button">☰ فیلترها</button>
+      <span class="count"><%= fa(total) %> کالا<%= q.q ? ' برای «' + q.q + '»' : '' %></span>
+      <div class="sort">
+        <label class="muted" style="font-size:13px">مرتب‌سازی:</label>
+        <form action="/products" method="get" style="display:flex;gap:8px;align-items:center">
+          <% ['q','cat','brand','model','year','min','max','instock','pbrand'].forEach(function (k) { %>
+            <% if (q[k]) { %><input type="hidden" name="<%= k %>" value="<%= q[k] %>"><% } %>
+          <% }) %>
+          <select name="sort" onchange="this.form.submit()">
+            <option value="newest" <%= q.sort === 'newest' ? 'selected' : '' %>>جدیدترین</option>
+            <option value="bestselling" <%= q.sort === 'bestselling' ? 'selected' : '' %>>پرفروش‌ترین</option>
+            <option value="cheapest" <%= q.sort === 'cheapest' ? 'selected' : '' %>>ارزان‌ترین</option>
+            <option value="expensive" <%= q.sort === 'expensive' ? 'selected' : '' %>>گران‌ترین</option>
+            <option value="discount" <%= q.sort === 'discount' ? 'selected' : '' %>>بیشترین تخفیف</option>
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <% if (products.length) { %>
+      <div class="grid">
+        <% products.forEach(function (p) { %><%- include('partials/card', {p: p}) %><% }) %>
+      </div>
+
+      <% if (pages > 1) {
+           var qs = function (pageNo) {
+             var parts = [];
+             Object.keys(q || {}).forEach(function (k) {
+               if (k === 'page') return;
+               if (q[k]) parts.push(k + '=' + encodeURIComponent(q[k]));
+             });
+             parts.push('page=' + pageNo);
+             return '/products?' + parts.join('&');
+           };
+      %>
+      <nav class="pager">
+        <% if (page > 1) { %><a href="<%= qs(page - 1) %>">قبلی</a><% } %>
+        <% for (var i = Math.max(1, page - 2); i <= Math.min(pages, page + 2); i++) { %>
+          <% if (i === page) { %><span class="current"><%= fa(i) %></span><% } else { %><a href="<%= qs(i) %>"><%= fa(i) %></a><% } %>
+        <% } %>
+        <% if (page < pages) { %><a href="<%= qs(page + 1) %>">بعدی</a><% } %>
+      </nav>
+      <% } %>
+    <% } else { %>
+      <div class="empty">
+        <h3>کالایی با این مشخصات پیدا نشد</h3>
+        <p class="muted">فیلترها را تغییر دهید یا عبارت دیگری را جست‌وجو کنید.</p>
+        <a class="btn" href="/products">نمایش همه کالاها</a>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/foot') %>
